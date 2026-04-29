@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 
 """
-Example client for /aimdk_5Fmsgs/srv/SetMcPresetMotion.
+Preset Motion Control Example Script
 
-This script automatically handles the required state machine transitions for safety.
-Playing preset motions (like waving or handshaking) requires the robot to be in
-BIPED_WHOLE_BODY_CTRL mode.
+Description:
+  This script demonstrates how to execute preset motions (like waving or handshaking) using the SetMcPresetMotion service.
+  Automatically handles state machine transitions for safe motion execution.
 
-Prerequisites auto-handled by this script:
-  The script ensures a safe sequential transition path:
-  PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN -> BIPED_WHOLE_BODY_CTRL.
-  Depending on the initial state, it enters the sequence at the appropriate step.
-  Finally, execute the requested preset motion.
+Prerequisites:
+  - MC (Motion Control) service must be running
+  - Robot must be in a safe environment for motion testing
+  - State machine will auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN -> BIPED_WHOLE_BODY_CTRL
+
+Usage:
+  python3 set_preset_motion.py
+
+Example:
+  python3 set_preset_motion.py
+
+Parameters:
+  - None 
 """
 
 import time

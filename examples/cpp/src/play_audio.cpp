@@ -1,22 +1,24 @@
 /**
- * @brief Example client for /aimdk_5Fmsgs/srv/PlayAudioFile
+ * Audio File Playback Example Script
  *
- * The following ROS parameters can be set via startup arguments:
- * --ros-args -p <name>:=<value>
+ * Description:
+ *   This script demonstrates how to play audio files on the robot using the PlayAudioFile service.
+ *   Supports various audio formats with configurable parameters.
  *
- * Supported parameters:
- *   - file_name: audio file name only
- *   - file_path: directory containing the audio file
+ * Prerequisites:
+ *   - Robot audio service must be running
+ *   - Audio file must exist in the specified path
+ *   - Audio output device must be working properly
  *
- * Examples:
- *   ros2 run aimdk_examples_cpp play_audio --ros-args -p
- *   file_name:=demo.wav -p file_path:=/tmp
+ * Usage:
+ *   ros2 run aimdk_examples_cpp play_audio --ros-args -p file_name:=<filename> -p file_path:=<directory>
  *
- *   ros2 run aimdk_examples_cpp play_audio --ros-args -p
- *   file_name:=sample.wav -p file_path:=/robot/software/interaction/bin/cfg
+ * Example:
+ *   ros2 run aimdk_examples_cpp play_audio --ros-args -p file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
  *
- * Other request fields use built-in defaults and are not configurable from
- * the command line in this demo.
+ * Parameters:
+ *   - file_name: Audio file name to play (default: 小星星.wav)
+ *   - file_path: Directory containing the audio file (default: /robot/software/aimrt_agent/bin/cfg/q1/audio)
  */
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/common_state.hpp"
@@ -160,8 +162,8 @@ class PlayAudioFileClient : public rclcpp::Node
 
   std::string service_name_  = "/aimdk_5Fmsgs/srv/PlayAudioFile";
   std::string pkg_name_      = "sdk_demo";
-  std::string file_name_     = "撒娇.wav";
-  std::string file_path_     = "/robot/software/interaction/bin/cfg";
+  std::string file_name_     = "小星星.wav";
+  std::string file_path_     = "/robot/software/aimrt_agent/bin/cfg/q1/audio";
   std::string sample_format_ = "S16_LE";
   std::string coding_format_ = "wave";
   int channels_              = 1;

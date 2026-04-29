@@ -1,3 +1,25 @@
+/**
+ * Volume Control Demo Example Script
+ *
+ * Description:
+ *   This script demonstrates how to control robot audio volume and mute settings using TTS services.
+ *   Includes volume adjustment, mute toggle, and TTS playback demonstration.
+ *
+ * Prerequisites:
+ *   - Robot TTS service must be running
+ *   - Audio output device must be working properly
+ *   - Volume and mute services must be available
+ *
+ * Usage:
+ *   ros2 run aimdk_examples_cpp volume_control
+ *
+ * Example:
+ *   ros2 run aimdk_examples_cpp volume_control
+ *
+ * Parameters:
+ *   - None
+ */
+
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/tts_priority_level.hpp"
 #include "aimdk_msgs/srv/get_mute.hpp"

@@ -1,31 +1,30 @@
 /**
- * @brief Example client for /aimdk_5Fmsgs/srv/SetMcAction and
- * /aimdk_5Fmsgs/srv/SetMcMotion
+ * MC Action and Motion Control Example Script
  *
- * The following ROS parameters can be set via startup arguments:
- * --ros-args -p <name>:=<value>
+ * Description:
+ *   This script demonstrates how to control robot actions and motions using the SetMcAction and SetMcMotion services.
+ *   Supports both interactive action mode and automatic motion execution with state machine transitions.
  *
- * Supported parameters:
- *   - type: "action" or "motion", required
- *   - action_desc: string, ignored in interactive action mode
- *   - motion: string, required when type=motion
- *   - interrupt: bool, optional when type=motion, default=true
+ * Prerequisites:
+ *   - MC (Motion Control) service must be running
+ *   - Robot must be in a safe environment for motion testing
+ *   - State machine auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
  *
- * Examples:
- *   # Starts interactive state machine navigator
+ * Usage:
+ *   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=<type> -p motion:=<motion_name> -p interrupt:=<bool>
+ *
+ * Example:
+ *   # Interactive action mode
  *   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=action
+ *   
+ *   # Execute specific motion with auto-transition
+ *   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p motion:=INTRO_POSE6 -p interrupt:=true
  *
- *   # Executes specific motion with auto-transition to WALK_RUN
- *   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p
- *   motion:=INTRO_POSE6 -p interrupt:=true
- *
- * Notes:
- *   - Interactive Action Mode: Allows manual state machine navigation via
- * terminal.
- *   - Automatic Motion Mode: seq auto-path (PASSIVE -> STAND -> WALK_RUN).
- *   - Smart Transition: Automatically skips redundant steps based on current
- * robot pose.
- *   - On-demand Check: Only waits for services relevant to the selected mode.
+ * Parameters:
+ *   - type: Control type, either 'action' or 'motion' (required)
+ *   - action_desc: Action description string (used in action mode)
+ *   - motion: Motion name to execute (required when type=motion)
+ *   - interrupt: Whether to interrupt current motion (default: true)
  */
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/common_state.hpp"

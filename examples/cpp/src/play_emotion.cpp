@@ -1,25 +1,28 @@
 /**
- * @brief Example client for /aimdk_5Fmsgs/srv/PlayEmotion
+ * Emotion Playback Example Script
  *
- * Usage Note:
- *   It is recommended to specify the 'type' and ('emotion_ids' or 'file_paths')
- *   based on your requirements.
- *   If no parameters are provided, the script will attempt to play a default emotion.
+ * Description:
+ *   This script demonstrates how to play robot emotions using the PlayEmotion service.
+ *   Supports both built-in emotion IDs and custom emotion file paths.
  *
- * The following ROS parameters can be set via startup arguments:
- * --ros-args -p <name>:=<value>
+ * Prerequisites:
+ *   - Robot emotion service must be running
+ *   - Emotion files must be available on the robot
  *
- * Supported parameters:
- *   - type: "emotion" or "file"
- *   - emotion_ids: integer array, required when type=emotion
- *   - file_paths: string array, required when type=file
+ * Usage:
+ *   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=<type> -p emotion_ids:="[...]" -p file_paths:="[...]"
  *
- * Examples:
- *   ros2 run aimdk_examples_cpp play_emotion --ros-args -p
- *   type:=emotion -p emotion_ids:="[90]"
+ * Example:
+ *   # Play built-in emotion with ID 10
+ *   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=emotion -p emotion_ids:="[10]"
+ *   
+ *   # Play custom emotion from file
+ *   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=file -p file_paths:="['/path/to/emotion.json']"
  *
- *   ros2 run aimdk_examples_cpp play_emotion --ros-args -p
- *   type:=file -p file_paths:="[\"/tmp/demo.mp4\"]"
+ * Parameters:
+ *   - type: Emotion type, either 'emotion' or 'file' (default: emotion)
+ *   - emotion_ids: List of built-in emotion IDs to play (default: [10])
+ *   - file_paths: List of custom emotion file paths (optional)
  */
 #include "aimdk_msgs/srv/play_emotion.hpp"
 #include "aimdk_msgs/msg/common_request.hpp"

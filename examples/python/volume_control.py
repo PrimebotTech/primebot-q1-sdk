@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
 
+"""
+Volume Control Demo Example Script
+
+Description:
+  This script demonstrates how to control robot audio volume and mute settings using TTS services.
+  Includes volume adjustment, mute toggle, and TTS playback demonstration.
+
+Prerequisites:
+  - Robot TTS service must be running
+  - Audio output device must be working properly
+  - Volume and mute services must be available
+
+Usage:
+  python3 volume_control.py
+
+Example:
+  python3 volume_control.py
+
+Parameters:
+  - None 
+"""
+
 import time
 
 import rclpy

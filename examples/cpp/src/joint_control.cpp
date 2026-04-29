@@ -1,26 +1,38 @@
 // 注意：在使用本脚本前，需首先关闭机器人本体运控模块并将机器人平躺或悬挂，否则可能出现不可预期的异常行为！
-// Prerequisites:
-//     1. Build the SDK: `colcon build`
-//     2. Source environment: `source install/setup.bash`
-//
-// Before running the following command, place the robot flat on the ground.
-// The following example lifts the left arm and right leg.
+// WARNING: Before using this script, you must first disable the robot's motion control module and place the robot flat on the ground or suspend it, otherwise unexpected behavior may occur!
 
-// Example:
-//     ros2 run aimdk_examples_cpp joint_control --ros-args \
-//       -p joint_names:="['FL_HIP_PITCH_Joint']" \
-//       -p target_positions:="[2.0]" \
-//       -p stiffness:="[80.0]" \
-//       -p damping:="[0.5]" \
-//       -p default_stiffness:=80.0 \
-//       -p default_damping:=0.5
-//
-// Notes:
-//   - joint_names and target_positions must have the same length.
-//   - stiffness and damping are optional. If omitted, default_stiffness and
-//     default_damping are used for every joint.
-//   - The node waits for /aima/hal/joint/state, then uses Ruckig to publish
-//     trajectory points to /aima/hal/joint/command until the target is reached.
+/**
+ * Joint Position Control Example Script
+ *
+ * Description:
+ *   This script demonstrates how to control robot joint positions via the /aima/hal/joint/command topic.
+ *   Uses Ruckig trajectory generation for smooth joint movement to target positions.
+ *
+ * Prerequisites:
+ *   - Robot must be placed flat on the ground or suspended
+ *   - Robot motion control module must be disabled
+ *   - SDK must be built: colcon build
+ *   - Environment must be sourced: source install/setup.bash
+ *   - Ruckig library must be available
+ *
+ * Usage:
+ *   ros2 run aimdk_examples_cpp joint_control --ros-args -p joint_names:="[...]" -p target_positions:="[...]"
+ *
+ * Example:
+ *   # Control left arm and right leg joints
+ *   ros2 run aimdk_examples_cpp joint_control --ros-args \
+ *     -p joint_names:="['right_hip_pitch_joint', 'right_hip_roll_joint', 'left_shoulder_pitch_joint', 'left_elbow_joint']" \
+ *     -p target_positions:="[-1.6, 0.5, -1.8, 2.2]"
+ *
+ * Parameters:
+ *   - joint_names: List of joint names to control (required)
+ *   - target_positions: List of target joint positions in radians (required)
+ *   - stiffness: List of stiffness values for each joint (optional)
+ *   - damping: List of damping values for each joint (optional)
+ *   - default_stiffness: Default stiffness for all joints (default: 20.0)
+ *   - default_damping: Default damping for all joints (default: 2.0)
+ *   - max_velocity: Maximum joint velocity (default: 3.0)
+ */
 #include <ruckig/ruckig.hpp>
 #include "aimdk_msgs/msg/joint_command_array.hpp"
 #include "aimdk_msgs/msg/joint_state_array.hpp"

@@ -1,11 +1,30 @@
 #!/usr/bin/env python3
 
 """
-Example client for /aimdk_5Fmsgs/srv/PlayEmotion.
+Emotion Playback Example Script
 
-Usage Note:
-  It is recommended to specify the 'type' and ('emotion_ids' or 'file_paths') based on your requirements.
-  If no parameters are provided, the script will attempt to play a default emotion.
+Description:
+  This script demonstrates how to play robot emotions using the PlayEmotion service.
+  Supports both built-in emotion IDs and custom emotion file paths.
+
+Prerequisites:
+  - Robot emotion service must be running
+  - Emotion files must be available on the robot
+
+Usage:
+  python3 play_emotion.py --ros-args -p type:=<type> -p emotion_ids:="[...]" -p file_paths:="[...]"
+
+Example:
+  # Play built-in emotion with ID 10
+  python3 play_emotion.py --ros-args -p type:=emotion -p emotion_ids:="[10]"
+  
+  # Play custom emotion from file
+  python3 play_emotion.py --ros-args -p type:=file -p file_paths:="['/path/to/emotion.json']"
+
+Parameters:
+  - type: Emotion type, either 'emotion' or 'file' (default: emotion)
+  - emotion_ids: List of built-in emotion IDs to play (default: [10])
+  - file_paths: List of custom emotion file paths (optional)
 """
 
 import rclpy

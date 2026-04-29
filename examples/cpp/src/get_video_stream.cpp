@@ -1,25 +1,31 @@
 /**
- * @brief Example reader for the RTSP video stream.
+ * RTSP Video Stream Reader Example Script
  *
- * RTSP URL Format:
- *   rtsp://{ip}:2554/live_{camera_id}
+ * Description:
+ *   This script demonstrates how to read video streams from the robot's cameras via RTSP protocol.
+ *   Supports multiple camera devices and saves video to MP4 format.
  *
- * Default MP4 output:
- *   /tmp/video_capture.mp4
+ * Prerequisites:
+ *   - Robot RTSP service must be running
+ *   - Camera hardware must be operational
+ *   - OpenCV must be installed
+ *   - Network connection to robot must be available
  *
- * Supported arguments:
- *   --camera_id, --camera: Camera identifier (interactive prompt if not provided)
- *   --robot_ip, --ip: Robot IP address (interactive prompt if not provided)
- *   --output_file, --output: MP4 output path.
- *   --capture_seconds, --duration: stop automatically after the first frame arrives and
- *     this many seconds have elapsed. Set <= 0 to run until Ctrl+C.
+ * Usage:
+ *   ros2 run aimdk_examples_cpp get_video_stream --camera <camera_id> --ip <robot_ip> --output <path> --duration <seconds>
  *
- * Interactive Mode:
- *   If --camera or --ip is not provided, the program will prompt for input.
- *   Press Enter to use the default values shown in brackets.
- *
- * Examples:
+ * Example:
+ *   # Interactive mode (will prompt for camera and IP)
  *   ros2 run aimdk_examples_cpp get_video_stream
+ *   
+ *   # Specify camera, IP, and output path
+ *   ros2 run aimdk_examples_cpp get_video_stream --camera head_stereo_left --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
+ *
+ * Parameters:
+ *   - camera_id: Camera identifier (interactive prompt if not provided)
+ *   - robot_ip: Robot IP address (interactive prompt if not provided)
+ *   - output_file: MP4 output file path (default: /tmp/video_capture.mp4)
+ *   - capture_seconds: Stop automatically after this many seconds (default: 5.0)
  */
 
 #include <opencv2/core.hpp>

@@ -1,30 +1,29 @@
 /**
- * @brief Example client for CaptureJpegImage service.
+ * Camera JPEG Capture Example Script
  *
- * The following ROS parameters can be set via startup arguments:
- * --ros-args -p <name>:=<value>
+ * Description:
+ *   This script demonstrates how to call the CaptureJpegImage service to capture a JPEG image from the robot's camera.
+ *   Supports multiple camera devices and interactive camera selection.
  *
- * Supported parameters:
- *   - service_name: CaptureJpegImage service name
- *   - camera_id: Camera identifier (interactive prompt if not provided)
-      *   - Available camera_id options:
-      *     - head_monocular_centra
-      *     - head_stereo_left
-      *     - head_stereo_right
-      *     For details, please refer to the interface documentation.
- *   - timeout_ms: wait time for a fresh JPEG frame, in milliseconds. Use 0 to
- *     follow the server default.
- *   - output_file: local JPEG output path. Leave empty to auto-generate one.
+ * Prerequisites:
+ *   - Robot camera service must be running
+ *   - Camera hardware must be operational
+ *   - CaptureJpegImage service must be available
  *
- * Interactive Mode:
- *   If camera_id is not provided via -p camera_id:=<value>,
- *   the program will prompt for input. Press Enter to use the default value.
+ * Usage:
+ *   ros2 run aimdk_examples_cpp get_jpg --ros-args -p camera_id:=<camera_id> -p output_file:=<path> -p timeout_ms:=<milliseconds>
  *
- * Examples:
+ * Example:
  *   # Interactive mode (will prompt for camera_id)
- *   ros2 run aimdk_examples_cpp get_jpg --ros-args \
- *     -p output_file:=/tmp/camera_capture.jpg
+ *   ros2 run aimdk_examples_cpp get_jpg --ros-args -p output_file:=/tmp/camera_capture.jpg
+ *   
+ *   # Specify camera and output path
+ *   ros2 run aimdk_examples_cpp get_jpg --ros-args -p camera_id:=head_stereo_left -p output_file:=/tmp/my_photo.jpg
  *
+ * Parameters:
+ *   - camera_id: Camera identifier (interactive prompt if not provided)
+ *   - timeout_ms: Wait time for a fresh JPEG frame in milliseconds (Default: 5000, Min: 6000)
+ *   - output_file: Local JPEG output path (Default: /tmp/camera_capture.jpg)
  */
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/common_state.hpp"
