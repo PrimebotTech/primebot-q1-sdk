@@ -98,8 +98,10 @@ public:
         std::cout << "\nCurrent Action is: " << current.action_desc
                   << ", please input the expected Action according to the "
                      "motion control state machine transition "
-                     "logic in the interface documentation. The Action you "
-                     "need to switch: "
+                     "logic in the interface documentation. "
+                     "Common examples: BIPED_STAND_DEFAULT (stand mode), "
+                     "BIPED_WALK_RUN (walk/run mode). "
+                     "The Action you need to switch: "
                   << std::flush;
 
         std::string target_action;

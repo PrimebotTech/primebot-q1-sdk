@@ -101,7 +101,8 @@ class SetMcActionClient(Node):
                         target_action = input(
                             f"Current Action is: {current_desc}, please input the expected Action "
                             "according to the motion control state machine transition logic in the "
-                            "interface documentation. The Action you need to switch: "
+                            "interface documentation. Common examples: BIPED_STAND_DEFAULT (stand mode), "
+                            "BIPED_WALK_RUN (walk/run mode). The Action you need to switch: "
                         ).strip()
                     except EOFError:
                         break

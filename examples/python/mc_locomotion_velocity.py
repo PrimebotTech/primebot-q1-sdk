@@ -15,6 +15,8 @@ Prerequisites:
 
 Usage:
   python3 mc_locomotion_velocity.py
+  At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
+  unexpected motion. Avoid issuing commands in this range.
 
 Example:
   # Run the script and follow interactive prompts

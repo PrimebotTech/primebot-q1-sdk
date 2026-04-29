@@ -13,6 +13,8 @@
  *
  * Usage:
  *   ros2 run aimdk_examples_cpp mc_locomotion_velocity
+ *   At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
+ *   unexpected motion. Avoid issuing commands in this range.
  *
  * Example:
  *   ros2 run aimdk_examples_cpp mc_locomotion_velocity
