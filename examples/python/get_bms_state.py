@@ -1,5 +1,26 @@
 #!/usr/bin/env python3
 
+"""
+BMS State Monitor Example Script
+
+Description:
+  This script demonstrates how to subscribe to the robot's Battery Management System (BMS) state topic.
+  It displays real-time battery information including voltage, current, temperature, and remaining capacity.
+
+Prerequisites:
+  - Robot BMS service must be running
+  - Battery must be connected and operational
+
+Usage:
+  python3 get_bms_state.py
+
+Example:
+  python3 get_bms_state.py
+
+Parameters:
+  - None
+"""
+
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
@@ -38,7 +59,7 @@ class BmsStateEcho(Node):
             f"  voltage:                      {self._fmt3(msg.voltage / 1000.0)} V",
             f"  current:                      {self._fmt3(msg.current / 1000.0)} A",
             f"  power:                        {self._fmt3(msg.power / 1000.0)} W",
-            f"  temperature:                  {self._fmt3(msg.temperature)} degC",
+            f"  temperature:                  {self._fmt3(msg.temperature)} °C",
             f"  remaining_capacity:           {msg.remaining_capacity} mAh",
             f"  remaining_capacity_percentage:{int(msg.remaining_capacity_percentage)} %",
             f"  cycle_count:                  {msg.cycle_count}",

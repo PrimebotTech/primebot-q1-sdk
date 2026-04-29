@@ -1,5 +1,26 @@
 #!/usr/bin/env python3
 
+"""
+LED Light Control Example Script
+
+Description:
+  This script demonstrates how to control the robot's LED strip lights using the LedStripCommand service.
+  Supports custom color settings and animation modes.
+
+Prerequisites:
+  - Robot LED service must be running
+  - LED hardware must be operational
+
+Usage:
+  python3 play_lights.py
+
+Example:
+  python3 play_lights.py
+
+Parameters:
+  - None 
+"""
+
 import rclpy
 import time
 import rclpy.logging

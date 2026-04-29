@@ -1,3 +1,24 @@
+/**
+ * LED Light Control Example Script
+ *
+ * Description:
+ *   This script demonstrates how to control the robot's LED strip lights using the LedStripCommand service.
+ *   Supports custom color settings and animation modes.
+ *
+ * Prerequisites:
+ *   - Robot LED service must be running
+ *   - LED hardware must be operational
+ *
+ * Usage:
+ *   ros2 run aimdk_examples_cpp play_lights
+ *
+ * Example:
+ *   ros2 run aimdk_examples_cpp play_lights
+ *
+ * Parameters:
+ *   - None
+ */
+
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/srv/led_strip_command.hpp"
 #include "rclcpp/rclcpp.hpp"

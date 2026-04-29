@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 
 """
-Example client for /aima/mc/locomotion/velocity.
+MC Locomotion Velocity Control Example Script
 
-This script automatically handles the required state machine transitions for safety.
-Locomotion control (walking/running) requires the robot to be in BIPED_WALK_RUN mode.
+Description:
+  This script demonstrates how to control robot walking/running velocity via the /aima/mc/locomotion/velocity topic.
+  Supports forward/backward, lateral, and angular velocity control with automatic state machine transitions.
 
-Prerequisites auto-handled by this script:
-  The script ensures a safe sequential transition path:
-  PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
-  Depending on the initial state, it enters the sequence at the appropriate step.
-
-Flow:
-  1. Detect current state and transition to BIPED_WALK_RUN sequentially.
-  2. Register this node as an authorized input source (priority 80).
-  3. Prompt the user for target velocities.
-  4. Publish velocity commands for 5 seconds.
-  5. Stop the robot by sending zero velocity.
+Prerequisites:
+  - Robot must be in a safe environment for locomotion testing
+  - MC (Motion Control) service must be running
+  - State machine will auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+  - Input source registration with priority 80
 
 Usage:
-  python3 examples/python/mc_locomotion_velocity.py
+  python3 mc_locomotion_velocity.py
+  At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
+  unexpected motion. Avoid issuing commands in this range.
+
+Example:
+  # Run the script and follow interactive prompts
+  python3 mc_locomotion_velocity.py
+
+Parameters:
+  - forward_velocity: Forward/backward velocity in m/s (positive=forward, negative=backward)
+  - lateral_velocity: Left/right lateral velocity in m/s (positive=left, negative=right)
+  - angular_velocity: Rotation velocity in rad/s (positive=left, negative=right)
 """
 
 import time

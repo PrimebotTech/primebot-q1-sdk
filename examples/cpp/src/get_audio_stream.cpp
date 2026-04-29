@@ -1,16 +1,26 @@
 /**
+ * Audio Stream Recording Example Script
+ *
+ * Description:
+ *   This script demonstrates how to subscribe to the robot's audio stream topic and record audio data.
+ *   The recorded audio is saved in 16kHz PCM raw format, with support for automatic conversion to WAV and playback.
+ *
+ * Prerequisites:
+ *   - Robot audio service must be running
+ *   - Microphone device must be working properly
+ *   - ffmpeg tool must be installed (for PCM to WAV conversion)
+ *
  * Usage:
  *   ros2 run aimdk_examples_cpp get_audio_stream --ros-args -p output_file:=<path> -p capture_seconds:=<seconds>
+ *   After the recording duration expires, you MUST type 'y' in the terminal to trigger conversion and playback.
  *
- * Notes:
- *   - After the recording duration expires, you MUST type 'y' in the terminal to trigger conversion and playback.
+ * Example:
+ *   ros2 run aimdk_examples_cpp get_audio_stream --ros-args -p capture_seconds:=10
  *
  * Parameters:
  *   - output_file: Path to save the original 16kHz PCM file (Default: /tmp/audio_capture.pcm).
  *   - capture_seconds: Duration of automated recording in seconds (Default: 5s).
- *
- * Example:
- *   ros2 run aimdk_examples_cpp get_audio_stream --ros-args -p capture_seconds:=10
+ *   - log_every_n_messages: Print progress log every N received packets.
  */
 #include "aimdk_msgs/msg/audio_capture.hpp"
 #include "aimdk_msgs/msg/audio_playback.hpp"

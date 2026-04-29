@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 
 """
-ROS parameters:
-  file_name: audio file name.
-  file_path: directory containing the audio file.
+Audio File Playback Example Script
+
+Description:
+  This script demonstrates how to play audio files on the robot using the PlayAudioFile service.
+  Supports various audio formats with configurable parameters.
+
+Prerequisites:
+  - Robot audio service must be running
+  - Audio file must exist in the specified path
+  - Audio output device must be working properly
+
+Usage:
+  python3 play_audio.py --ros-args -p file_name:=<filename> -p file_path:=<directory>
 
 Example:
-  python3 examples/python/play_audio.py --ros-args \
-    -p file_name:=demo.wav -p file_path:=/tmp
+  python3 play_audio.py --ros-args -p file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
+
+Parameters:
+  - file_name: Audio file name to play (default: 小星星.wav)
+  - file_path: Directory containing the audio file (default: /robot/software/aimrt_agent/bin/cfg/q1/audio)
 """
 
 import rclpy
@@ -22,7 +35,7 @@ from aimdk_msgs.srv import PlayAudioFile
 class PlayAudioFileClient(Node):
     def __init__(self):
         super().__init__("play_audio_file_client")
-        self.file_name = self.declare_parameter("file_name", "撒娇.wav").value
+        self.file_name = self.declare_parameter("file_name", "小星星.wav").value
         self.file_path = self.declare_parameter("file_path", "/robot/software/aimrt_agent/bin/cfg/q1/audio").value
 
         self.service_name = "/aimdk_5Fmsgs/srv/PlayAudioFile"

@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
 
 """
-Example client for /aimdk_5Fmsgs/srv/SetMcAction and /aimdk_5Fmsgs/srv/SetMcMotion
+MC Action and Motion Control Example Script
 
-The following ROS parameters can be set via startup arguments:
---ros-args -p <name>:=<value>
+Description:
+  This script demonstrates how to control robot actions and motions using the SetMcAction and SetMcMotion services.
+  Supports both interactive action mode and automatic motion execution with state machine transitions.
 
-Supported parameters:
-  - type: "action" or "motion", required
-  - action_desc: string, ignored in interactive action mode
-  - motion: string, required when type=motion
-  - interrupt: bool, optional when type=motion, default=true
+Prerequisites:
+  - MC (Motion Control) service must be running
+  - Robot must be in a safe environment for motion testing
+  - State machine auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
 
-Examples:
-  # Starts interactive state machine navigator
-  python3 examples/python/set_mc_action.py --ros-args -p type:=action
+Usage:
+  python3 set_mc_action.py --ros-args -p type:=<type> -p motion:=<motion_name> -p interrupt:=<bool>
+
+Example:
+  # Interactive action mode
+  python3 set_mc_action.py --ros-args -p type:=action
   
-  # Executes specific motion with auto-transition to WALK_RUN
-  python3 examples/python/set_mc_action.py --ros-args -p type:=motion -p \
-  motion:=INTRO_POSE6 -p interrupt:=true
+  # Execute specific motion with auto-transition
+  python3 set_mc_action.py --ros-args -p type:=motion -p motion:=INTRO_POSE6 -p interrupt:=true
 
-Notes:
-  - Interactive Action Mode: Allows manual state machine navigation via terminal.
-  - Automatic Motion Mode: seq auto-path (PASSIVE -> STAND -> WALK_RUN).
-  - Smart Transition: Automatically skips redundant steps based on current robot pose.
-  - On-demand Check: Only waits for services relevant to the selected mode.
+Parameters:
+  - type: Control type, either 'action' or 'motion' (required)
+  - action_desc: Action description string (used in action mode)
+  - motion: Motion name to execute (required when type=motion)
+  - interrupt: Whether to interrupt current motion (default: true)
 """
 
 import time
@@ -99,7 +101,8 @@ class SetMcActionClient(Node):
                         target_action = input(
                             f"Current Action is: {current_desc}, please input the expected Action "
                             "according to the motion control state machine transition logic in the "
-                            "interface documentation. The Action you need to switch: "
+                            "interface documentation. Common examples: BIPED_STAND_DEFAULT (stand mode), "
+                            "BIPED_WALK_RUN (walk/run mode). The Action you need to switch: "
                         ).strip()
                     except EOFError:
                         break
