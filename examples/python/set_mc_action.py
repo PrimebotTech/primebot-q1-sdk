@@ -98,12 +98,14 @@ class SetMcActionClient(Node):
                     self.get_logger().info(f'Current Action is: {current_desc}')
                     
                     try:
-                        target_action = input(
+                        if not self.action_desc:
+                            target_action = input(
                             f"Current Action is: {current_desc}, please input the expected Action "
                             "according to the motion control state machine transition logic in the "
-                            "interface documentation. Common examples: BIPED_STAND_DEFAULT (stand mode), "
-                            "BIPED_WALK_RUN (walk/run mode). The Action you need to switch: "
-                        ).strip()
+                            "interface documentation. The Action you need to switch: "
+                            ).strip()
+                        else:
+                            target_action = self.action_desc
                     except EOFError:
                         break
 
