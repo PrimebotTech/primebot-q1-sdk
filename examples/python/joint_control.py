@@ -35,7 +35,8 @@ Example:
       'left_shoulder_yaw_joint', \
       'left_shoulder_roll_joint' \
     ]" \
-    -p target_positions:="[ \\
+    -p target_positions:="[ \
+      -1.6, 0.5, 0.0, 0.0, 0.0, 0.0,\
       -1.8, 2.2, -0.2, 0.0 \
     ]"
 
@@ -43,8 +44,7 @@ Parameters:
   - joint_names: List of joint names to control (required)
   - target_positions: List of target joint positions in radians (required)
   - stiffness: List of stiffness values for each joint (optional)
-  - damping: List of damping values for
-      -1.6, 0.5, 0.0, 0.0, 0.0, 0.0,  each joint (optional)
+  - damping: List of damping values for each joint (optional)
   - default_stiffness: Default stiffness for all joints (default: 20.0)
   - default_damping: Default damping for all joints (default: 2.0)
   - max_velocity: Maximum joint velocity (default: 3.0)

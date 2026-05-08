@@ -36,6 +36,7 @@
  *       'left_shoulder_roll_joint' \
  *     ]" \
  *     -p target_positions:="[ \
+ *       -1.6, 0.5, 0.0, 0.0, 0.0, 0.0, \
  *       -1.8, 2.2, -0.2, 0.0 \
  *     ]"
  *
