@@ -95,19 +95,21 @@ public:
         RCLCPP_INFO(this->get_logger(), "Current Action is: %s",
                     current.action_desc.c_str());
 
-        std::cout << "\nCurrent Action is: " << current.action_desc
-                  << ", please input the expected Action according to the "
-                     "motion control state machine transition "
-                     "logic in the interface documentation. "
-                     "Common examples: BIPED_STAND_DEFAULT (stand mode), "
-                     "BIPED_WALK_RUN (walk/run mode). "
-                     "The Action you need to switch: "
-                  << std::flush;
-
         std::string target_action;
-        if (!std::getline(std::cin, target_action) || target_action.empty()) {
-          if (std::cin.eof()) break;
-          continue;
+        if (action_desc_.empty()) {
+          std::cout << "\nCurrent Action is: " << current.action_desc
+                    << ", please input the expected Action according to the "
+                       "motion control state machine transition "
+                       "logic in the interface documentation. "
+                       "The Action you need to switch: "
+                    << std::flush;
+
+          if (!std::getline(std::cin, target_action) || target_action.empty()) {
+            if (std::cin.eof()) break;
+            continue;
+          }
+        } else {
+          target_action = action_desc_;
         }
 
         // Execute SetMcAction
