@@ -203,6 +203,7 @@ class SetMcActionClient(Node):
         try:
             request = SetMcAction.Request()
             request.header = RequestHeader()
+            request.source = "node"  # 触发源标识
 
             command = McActionCommand()
             command.action = McAction()

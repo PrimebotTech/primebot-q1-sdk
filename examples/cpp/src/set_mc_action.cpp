@@ -254,6 +254,7 @@ private:
     try {
       auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
       request->header.stamp = this->now();
+      request->source = "node";  // 触发源标识
       request->command.action.value = 0;
       request->command.action_desc = action_desc;
 
