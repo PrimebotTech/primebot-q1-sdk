@@ -107,6 +107,7 @@ class SetMcPresetMotionClient(Node):
             request = SetMcAction.Request()
             request.header = RequestHeader()
             request.header.stamp = self.get_clock().now().to_msg()
+            request.source = "node"  # 触发源标识
             request.command = McActionCommand()
             request.command.action = McAction()
             request.command.action_desc = action_desc

@@ -126,24 +126,45 @@ public:
     if (!wait_for_service(set_client_, "/aimdk_5Fmsgs/srv/SetMcInputSource")) {
       return false;
     }
-
+  
+    // 先清理残留的同名输入源（上次运行可能未正常释放）
+    auto del_request =
+        std::make_shared<aimdk_msgs::srv::SetMcInputSource::Request>();
+    del_request->action.value = 1003;  // INPUTACTION_DELETE
+    del_request->input_source.name = "node";
+    del_request->request.header.stamp = this->now();
+    auto del_future = call_service_with_retry<aimdk_msgs::srv::SetMcInputSource>(
+        set_client_, del_request, "SetMcInputSource(DELETE)");
+    if (del_future.valid()) {
+      auto del_resp = del_future.get();
+      if (del_resp->response.header.code == 0) {
+        RCLCPP_INFO(this->get_logger(), "Cleaned up leftover input source 'node'");
+      }
+    }
+  
     auto request =
         std::make_shared<aimdk_msgs::srv::SetMcInputSource::Request>();
-    request->action.value = 1001;
+    request->action.value = 1001;  // INPUTACTION_ADD
     request->input_source.name = "node";
     request->input_source.priority = 80;
     request->input_source.timeout = 1000;
-
+  
     request->request.header.stamp = this->now();
     auto future = call_service_with_retry<aimdk_msgs::srv::SetMcInputSource>(
-        set_client_, request, "SetMcInputSource");
-    
+        set_client_, request, "SetMcInputSource(ADD)");
+  
     if (!future.valid()) {
-      RCLCPP_ERROR(this->get_logger(), "SetMcInputSource failed after retries");
+      RCLCPP_ERROR(this->get_logger(), "SetMcInputSource(ADD) failed after retries");
       return false;
     }
-
+  
     auto response = future.get();
+    int ret_code = response->response.header.code;
+    if (ret_code != 0) {
+      RCLCPP_WARN(this->get_logger(),
+                  "SetMcInputSource(ADD) returned code=%d", ret_code);
+      return false;
+    }
     int state = response->response.state.value;
     RCLCPP_INFO(this->get_logger(),
                 "Set input source succeeded: state=%d, task_id=%lu", state,
@@ -274,6 +295,7 @@ public:
   bool set_action(const std::string &desc) {
     auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
     request->header.stamp = this->now();
+    request->source = "node";  // 触发源标识
     request->command.action_desc = desc;
     RCLCPP_INFO(this->get_logger(), "Requesting state switch to: %s",
                 desc.c_str());
@@ -295,10 +317,12 @@ public:
     auto deadline = std::chrono::steady_clock::now() + timeout;
     while (std::chrono::steady_clock::now() < deadline) {
       ActionInfo info;
+      // Locomotion modes (walk/run) report status=2 (TRANSITION) instead of
+      // RUNNING (100), so accept any non-IDLE status when action_desc matches.
       if (get_action_status(info) && info.action_desc == target &&
-          info.status == aimdk_msgs::msg::McActionStatus::RUNNING) {
-        RCLCPP_INFO(this->get_logger(), "Robot reached state: %s",
-                    target.c_str());
+          info.status != aimdk_msgs::msg::McActionStatus::IDLE) {
+        RCLCPP_INFO(this->get_logger(), "Robot reached state: %s (status=%d)",
+                    target.c_str(), info.status);
         return true;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -333,7 +357,7 @@ public:
     }
 
     if (has_info && info.action_desc == "BIPED_WALK_RUN" &&
-        info.status == aimdk_msgs::msg::McActionStatus::RUNNING) {
+        info.status != aimdk_msgs::msg::McActionStatus::IDLE) {
       return true;
     }
 
@@ -365,6 +389,33 @@ public:
     }
 
     return true;
+  }
+
+  bool release_input_source() {
+    auto request =
+        std::make_shared<aimdk_msgs::srv::SetMcInputSource::Request>();
+    request->action.value = 1003;  // INPUTACTION_DELETE
+    request->input_source.name = "node";
+    request->request.header.stamp = this->now();
+
+    auto future = call_service_with_retry<aimdk_msgs::srv::SetMcInputSource>(
+        set_client_, request, "SetMcInputSource");
+
+    if (!future.valid()) {
+      RCLCPP_ERROR(this->get_logger(), "ReleaseInputSource failed after retries");
+      return false;
+    }
+
+    auto response = future.get();
+    int ret_code = response->response.header.code;
+    if (ret_code == 0) {
+      RCLCPP_INFO(this->get_logger(), "Input source released successfully.");
+      return true;
+    }
+
+    RCLCPP_WARN(this->get_logger(),
+                "SetMcInputSource returned code=%d", ret_code);
+    return false;
   }
 
   void wait_for_services() {
@@ -421,8 +472,9 @@ std::shared_ptr<DirectVelocityControl> g_node = nullptr;
 void signal_handler(int signal) {
   if (g_node) {
     g_node->clear_velocity();
+    g_node->release_input_source();
     RCLCPP_INFO(g_node->get_logger(),
-                "Received signal %d, clearing velocity and shutting down...",
+                "Received signal %d, clearing velocity, releasing input source and shutting down...",
                 signal);
     g_node.reset();
   }
@@ -498,6 +550,9 @@ int main(int argc, char *argv[]) {
   node->clear_velocity();
   node->publish_velocity();
   RCLCPP_INFO(node->get_logger(), "5 seconds elapsed; robot stopped");
+
+  // Step 6: Release input source
+  node->release_input_source();
 
   g_node.reset();
   rclcpp::shutdown();
