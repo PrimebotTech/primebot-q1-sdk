@@ -5,11 +5,12 @@ Audio File Playback Example Script
 
 Description:
   This script demonstrates how to play audio files on the robot using the PlayAudioFile service.
-  Supports various audio formats with configurable parameters.
+  Default sample rate is 24kHz. Supports various audio formats with configurable parameters.
 
 Prerequisites:
   - Robot audio service must be running
   - Audio file must exist in the specified path
+  - Audio file must be 24kHz, 16-bit PCM, mono WAV format
   - Audio output device must be working properly
 
 Usage:
@@ -43,7 +44,7 @@ class PlayAudioFileClient(Node):
         self.sample_format = "S16_LE"
         self.coding_format = "wave"
         self.channels = 1
-        self.sample_rate = 16000
+        self.sample_rate = 24000
         self.size = 0
         self.priority = 6
         self.priority_weight = 0
