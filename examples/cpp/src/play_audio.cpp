@@ -1,24 +1,25 @@
 /**
- * Audio File Playback Example Script
+ * @brief Example client for /aimdk_5Fmsgs/srv/PlayAudioFile
  *
- * Description:
- *   This script demonstrates how to play audio files on the robot using the PlayAudioFile service.
- *   Supports various audio formats with configurable parameters.
+ * Default sample rate is 24kHz. Audio files must be 24kHz, 16-bit PCM, mono WAV format.
  *
- * Prerequisites:
- *   - Robot audio service must be running
- *   - Audio file must exist in the specified path
- *   - Audio output device must be working properly
+ * The following ROS parameters can be set via startup arguments:
+ * --ros-args -p <name>:=<value>
  *
- * Usage:
- *   ros2 run aimdk_examples_cpp play_audio --ros-args -p file_name:=<filename> -p file_path:=<directory>
+ * Supported parameters:
+ *   - file_name: audio file name only
+ *   - file_path: directory containing the audio file
  *
- * Example:
- *   ros2 run aimdk_examples_cpp play_audio --ros-args -p file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
+ *Usage:
+ *   ros2 run aimdk_examples_cpp play_audio --ros-args -p
+ *   file_name:=demo.wav -p file_path:=/tmp
+ 
+ *Examples:
+ *   ros2 run aimdk_examples_cpp play_audio --ros-args -p
+ *   file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
  *
- * Parameters:
- *   - file_name: Audio file name to play (default: 小星星.wav)
- *   - file_path: Directory containing the audio file (default: /robot/software/aimrt_agent/bin/cfg/q1/audio)
+ * Other request fields use built-in defaults and are not configurable from
+ * the command line in this demo.
  */
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/common_state.hpp"
@@ -167,7 +168,7 @@ class PlayAudioFileClient : public rclcpp::Node
   std::string sample_format_ = "S16_LE";
   std::string coding_format_ = "wave";
   int channels_              = 1;
-  int sample_rate_           = 16000;
+  int sample_rate_           = 24000;
   int size_                  = 0;
   int priority_              = 6;
   int priority_weight_       = 0;

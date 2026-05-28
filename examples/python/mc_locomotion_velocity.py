@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
 
 """
-MC Locomotion Velocity Control Example Script
+Example client for /aima/mc/locomotion/velocity.
 
-Description:
-  This script demonstrates how to control robot walking/running velocity via the /aima/mc/locomotion/velocity topic.
-  Supports forward/backward, lateral, and angular velocity control with automatic state machine transitions.
+This script automatically handles the required state machine transitions for safety.
+Locomotion control (walking/running) requires the robot to be in BIPED_WALK_RUN mode.
 
-Prerequisites:
-  - Robot must be in a safe environment for locomotion testing
-  - MC (Motion Control) service must be running
-  - State machine will auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
-  - Input source registration with priority 80
+Prerequisites auto-handled by this script:
+  The script ensures a safe sequential transition path:
+  PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+  Depending on the initial state, it enters the sequence at the appropriate step.
+
+Flow:
+  1. Detect current state and transition to BIPED_WALK_RUN sequentially.
+  2. Register this node as an authorized input source (priority 80).
+  3. Prompt the user for target velocities.
+  4. Publish velocity commands for 5 seconds.
+  5. Stop the robot by sending zero velocity.
 
 Usage:
-  python3 mc_locomotion_velocity.py
-  At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
-  unexpected motion. Avoid issuing commands in this range.
-
-Example:
-  # Run the script and follow interactive prompts
-  python3 mc_locomotion_velocity.py
-
-Parameters:
-  - forward_velocity: Forward/backward velocity in m/s (positive=forward, negative=backward)
-  - lateral_velocity: Left/right lateral velocity in m/s (positive=left, negative=right)
-  - angular_velocity: Rotation velocity in rad/s (positive=left, negative=right)
+  python3 examples/python/mc_locomotion_velocity.py
 """
 
+import signal
 import time
 
 import rclpy
@@ -145,6 +140,7 @@ class DirectVelocityControl(Node):
             request = SetMcAction.Request()
             request.header = RequestHeader()
             request.header.stamp = self.get_clock().now().to_msg()
+            request.source = "node"  # 触发源标识
             request.command = McActionCommand()
             request.command.action = McAction()
             request.command.action_desc = action_desc
@@ -167,8 +163,10 @@ class DirectVelocityControl(Node):
         deadline = time.monotonic() + timeout_sec
         while time.monotonic() < deadline:
             _, desc, status = self.get_action_status()
-            if desc == target_desc and status == McActionStatus.RUNNING:
-                self.get_logger().info(f"Robot successfully reached state: {target_desc}")
+            # Locomotion modes (walk/run) report status=2 (TRANSITION) instead of
+            # RUNNING (100), so accept any non-IDLE status when action_desc matches.
+            if desc == target_desc and status != McActionStatus.IDLE:
+                self.get_logger().info(f"Robot successfully reached state: {target_desc} (status={status})")
                 return True
             time.sleep(0.5)
         self.get_logger().error(f"Timeout waiting for state: {target_desc}")
@@ -191,7 +189,7 @@ class DirectVelocityControl(Node):
             if desc is None:
                 self.get_logger().error("Action status remained None after 5 seconds of polling.")
 
-        if desc == 'BIPED_WALK_RUN' and status == McActionStatus.RUNNING:
+        if desc == 'BIPED_WALK_RUN' and status != McActionStatus.IDLE:
             return True
 
         self.get_logger().info(f"Current state is {desc}. Starting state machine transition sequence...")
@@ -233,15 +231,31 @@ class DirectVelocityControl(Node):
         ):
             return False
 
+        # 先清理残留的同名输入源（上次运行可能未正常释放）
+        del_request = SetMcInputSource.Request()
+        del_request.action.value = 1003  # INPUTACTION_DELETE
+        del_request.input_source.name = "node"
+        del_request.request.header.stamp = self.get_clock().now().to_msg()
+        del_future = self.call_service_with_retry(
+            self.set_client, del_request, "SetMcInputSource(DELETE)"
+        )
+        if del_future is not None:
+            try:
+                del_resp = del_future.result()
+                if del_resp.response.header.code == 0:
+                    self.get_logger().info("Cleaned up leftover input source 'node'")
+            except Exception:
+                pass
+
         request = SetMcInputSource.Request()
-        request.action.value = 1001
+        request.action.value = 1001  # INPUTACTION_ADD
         request.input_source.name = "node"
         request.input_source.priority = 80
         request.input_source.timeout = 1000
         request.request.header.stamp = self.get_clock().now().to_msg()
 
         future = self.call_service_with_retry(
-            self.set_client, request, "SetMcInputSource"
+            self.set_client, request, "SetMcInputSource(ADD)"
         )
         if future is None:
             return False
@@ -357,10 +371,43 @@ class DirectVelocityControl(Node):
         self.angular_velocity = angular
         return True
 
+    def release_input_source(self) -> bool:
+        request = SetMcInputSource.Request()
+        request.action.value = 1003
+        request.input_source.name = "node"
+        request.request.header.stamp = self.get_clock().now().to_msg()
+
+        future = self.call_service_with_retry(
+            self.set_client, request, "SetMcInputSource"
+        )
+        if future is None:
+            return False
+
+        try:
+            response = future.result()
+        except Exception as exc:
+            self.get_logger().error(f"SetMcInputSource failed: {exc}")
+            return False
+
+        ret_code = response.response.header.code
+
+        if ret_code == 0:
+            self.get_logger().info("Input source released successfully.")
+            return True
+
+        self.get_logger().warning(f"SetMcInputSource returned code={ret_code}")
+        return False
 
 def main(args=None):
     rclpy.init(args=args)
+    # init 之后立即覆盖 ROS2 的 SIGINT 处理器
+    # 阻止 Ctrl+C 触发 rclpy.shutdown()，保持上下文有效以释放输入源
+    def _sigint_handler(sig, frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGINT, _sigint_handler)
+
     node = DirectVelocityControl()
+    input_source_registered = False
 
     try:
         if not node.wait_for_services():
@@ -375,6 +422,7 @@ def main(args=None):
         if not node.register_input_source():
             node.get_logger().error("Input source registration failed, exiting")
             return 1
+        input_source_registered = True
 
         # Input speed must be 0, or have an absolute value at least the minimum threshold.
         try:
@@ -410,15 +458,19 @@ def main(args=None):
                 node.get_current_input_source()
                 queried_after_publish = True
 
-            rclpy.spin_once(node, timeout_sec=0.1)
-            time.sleep(0.001)
+            rclpy.spin_once(node, timeout_sec=0.001)
 
         node.clear_velocity()
         # Ensure zero velocity is published
         node.publish_velocity()
         node.get_logger().info("5 seconds elapsed; robot stopped")
+        node.release_input_source()
+        input_source_registered = False
         return 0
     finally:
+        if input_source_registered:
+            node.get_logger().info("Releasing input source on exit...")
+            node.release_input_source()
         if node.timer is not None:
             node.timer.cancel()
         node.destroy_node()

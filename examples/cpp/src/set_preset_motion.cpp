@@ -182,6 +182,7 @@ private:
   bool set_action(const std::string &desc) {
     auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
     request->header.stamp = this->now();
+    request->source = "node";  // 触发源标识
     request->command.action_desc = desc;
     RCLCPP_INFO(this->get_logger(), "Requesting state switch to: %s",
                 desc.c_str());
