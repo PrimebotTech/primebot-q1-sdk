@@ -194,6 +194,8 @@ class CaptureJpegClient(Node):
             f"width={jpeg.width} "
             f"height={jpeg.height} "
             f"framerate={jpeg.framerate} "
+            f"exposure={jpeg.exposure} "
+            f"gain={jpeg.gain} "
             f"frame_id={image.header.frame_id}"
         )
         return True
