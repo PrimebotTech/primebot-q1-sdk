@@ -93,37 +93,36 @@ class SetMcActionClient(Node):
 
         if self.type == 'action':
             try:
-                while rclpy.ok():
-                    current_id, current_desc, current_status = self.get_action_status()
-                    self.get_logger().info(f'Current Action is: {current_desc}')
-                    
-                    try:
-                        if not self.action_desc:
-                            target_action = input(
-                            f"Current Action is: {current_desc}, please input the expected Action "
-                            "according to the motion control state machine transition logic in the "
-                            "interface documentation. The Action you need to switch: "
-                            ).strip()
-                        else:
-                            target_action = self.action_desc
-                    except EOFError:
-                        break
+                # 只执行一次动作
+                current_id, current_desc, current_status = self.get_action_status()
+                self.get_logger().info(f'Current Action is: {current_desc}')
+                
+                try:
+                    if not self.action_desc:
+                        target_action = input(
+                        f"Current Action is: {current_desc}, please input the expected Action "
+                        "according to the motion control state machine transition logic in the "
+                        "interface documentation. The Action you need to switch: "
+                        ).strip()
+                    else:
+                        target_action = self.action_desc
+                except EOFError:
+                    return True
 
-                    if not target_action:
-                        continue
+                if not target_action:
+                    self.get_logger().error("No target action specified")
+                    return False
 
-                    # Execute SetMcAction
-                    if self.set_action(target_action):
-                        # Poll for success within 5 seconds
-                        if self.wait_for_action(target_action, timeout_sec=5.0):
-                            print("Switch succeeded, would you like to continue switching? (y/n): ", end='', flush=True)
-                            choice = input().strip().lower()
-                            if choice != 'y':
-                                break
-                        else:
-                            print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
+                # Execute SetMcAction
+                if self.set_action(target_action):
+                    # Poll for success within 5 seconds
+                    if self.wait_for_action(target_action, timeout_sec=5.0):
+                        print("\nSwitch succeeded!")
                     else:
                         print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
+                else:
+                    print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
+                
                 return True
             except KeyboardInterrupt:
                 return True

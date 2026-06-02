@@ -458,7 +458,8 @@ def main(args=None):
                 node.get_current_input_source()
                 queried_after_publish = True
 
-            rclpy.spin_once(node, timeout_sec=0.001)
+            rclpy.spin_once(node, timeout_sec=0.1)
+            time.sleep(0.1)
 
         node.clear_velocity()
         # Ensure zero velocity is published

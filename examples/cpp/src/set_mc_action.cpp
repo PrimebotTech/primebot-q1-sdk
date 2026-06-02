@@ -85,56 +85,49 @@ public:
     wait_for_services();
 
     if (type_ == "action") {
-      while (rclcpp::ok()) {
-        ActionInfo current;
-        if (!get_action_status(current)) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(500));
-          continue;
+      // Execute action only once (no loop)
+      ActionInfo current;
+      if (!get_action_status(current)) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to get current action status");
+        return false;
+      }
+
+      RCLCPP_INFO(this->get_logger(), "Current Action is: %s",
+                  current.action_desc.c_str());
+
+      std::string target_action;
+      if (action_desc_.empty()) {
+        std::cout << "\nCurrent Action is: " << current.action_desc
+                  << ", please input the expected Action according to the "
+                     "motion control state machine transition "
+                     "logic in the interface documentation. "
+                     "The Action you need to switch: "
+                  << std::flush;
+
+        if (!std::getline(std::cin, target_action) || target_action.empty()) {
+          RCLCPP_ERROR(this->get_logger(), "No target action specified");
+          return false;
         }
+      } else {
+        target_action = action_desc_;
+      }
 
-        RCLCPP_INFO(this->get_logger(), "Current Action is: %s",
-                    current.action_desc.c_str());
-
-        std::string target_action;
-        if (action_desc_.empty()) {
-          std::cout << "\nCurrent Action is: " << current.action_desc
-                    << ", please input the expected Action according to the "
-                       "motion control state machine transition "
-                       "logic in the interface documentation. "
-                       "The Action you need to switch: "
-                    << std::flush;
-
-          if (!std::getline(std::cin, target_action) || target_action.empty()) {
-            if (std::cin.eof()) break;
-            continue;
-          }
-        } else {
-          target_action = action_desc_;
-        }
-
-        // Execute SetMcAction
-        if (set_action(target_action)) {
-          // Poll for success within 5 seconds
-          if (wait_for_action(target_action, std::chrono::seconds(5))) {
-            std::cout << "Switch succeeded, would you like to continue "
-                         "switching? (y/n): "
-                      << std::flush;
-            std::string choice;
-            std::getline(std::cin, choice);
-            if (choice != "y" && choice != "Y") {
-              break;
-            }
-          } else {
-            std::cout << "Switch failed, please confirm if the expected Action "
-                         "complies with the state machine transition logic"
-                      << std::endl;
-          }
+      // Execute SetMcAction
+      if (set_action(target_action)) {
+        // Poll for success within 5 seconds
+        if (wait_for_action(target_action, std::chrono::seconds(5))) {
+          std::cout << "\nSwitch succeeded!" << std::endl;
         } else {
           std::cout << "Switch failed, please confirm if the expected Action "
                        "complies with the state machine transition logic"
                     << std::endl;
         }
+      } else {
+        std::cout << "Switch failed, please confirm if the expected Action "
+                     "complies with the state machine transition logic"
+                  << std::endl;
       }
+
       return true;
     } else {
       // Optimized logic for 'motion' type: Ensure robot is in BIPED_WALK_RUN
