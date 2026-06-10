@@ -47,9 +47,32 @@
 #include <memory>
 #include <signal.h>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
-constexpr double kServiceCallTimeoutSec = 2.0;
+// CommonState reason 字段对应的中文描述
+const std::unordered_map<uint32_t, std::string> kReasonDescriptions = {
+    {0, "无错误"},
+    {1, "开箱状态中"},
+    {2, "开机自检中"},
+    {3, "关机状态中"},
+    {4, "当前形态不支持"},
+    {5, "低电量限制"},
+    {6, "正在充电中"},
+    {7, "动作不在白名单"},
+    {8, "HDS故障"},
+    {9, "当前模式不支持"}
+};
+
+std::string GetReasonDescription(uint32_t reason) {
+  auto it = kReasonDescriptions.find(reason);
+  if (it != kReasonDescriptions.end()) {
+    return it->second;
+  }
+  return "未知原因(" + std::to_string(reason) + ")";
+}
+
+constexpr double kServiceCallTimeoutSec = 3.0;
 constexpr int kMaxRetryCount = 3;
 
 class DirectVelocityControl : public rclcpp::Node {
@@ -308,8 +331,21 @@ public:
     }
 
     auto res = future.get();
-    return res && res->response.status.value ==
-                      aimdk_msgs::msg::CommonState::SUCCESS;
+    if (res && res->response.status.value == aimdk_msgs::msg::CommonState::SUCCESS) {
+      return true;
+    }
+    
+    // 获取失败原因
+    if (res) {
+      uint32_t reason = res->response.status.reason;
+      if (reason > 0) {
+        std::string reason_desc = GetReasonDescription(reason);
+        RCLCPP_WARN(this->get_logger(), "SetMcAction rejected: reason=%u - %s",
+                    reason, reason_desc.c_str());
+      }
+    }
+    
+    return false;
   }
 
   bool wait_for_action(const std::string &target,
@@ -379,12 +415,18 @@ public:
     } else if (info.action_desc == "DAMPING_DEFAULT" || info.action_desc == "STORE_DEFAULT") {
         start_index = 0;
     } else {
-        start_index = 0;
+        start_index = 1;
     }
 
     for (size_t i = start_index; i < sequence.size(); ++i) {
         if (!set_action(sequence[i]) || !wait_for_action(sequence[i])) {
             return false;
+        }
+        
+        // 切换到双足站立后等待一会，让机器人稳定
+        if (sequence[i] == "BIPED_STAND_DEFAULT") {
+            RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
     }
 
