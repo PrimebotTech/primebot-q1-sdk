@@ -34,8 +34,26 @@ from aimdk_msgs.msg import (
 )
 from aimdk_msgs.srv import GetCurrentInputSource, SetMcInputSource, GetMcAction, SetMcAction
 
-SERVICE_CALL_TIMEOUT_SEC = 2.0
+SERVICE_CALL_TIMEOUT_SEC = 3.0
 MAX_RETRY_COUNT = 3
+
+# CommonState reason 字段对应的中文描述
+REASON_DESCRIPTIONS = {
+    0: '无错误',
+    1: '开箱状态中',
+    2: '开机自检中',
+    3: '关机状态中',
+    4: '当前形态不支持',
+    5: '低电量限制',
+    6: '正在充电中',
+    7: '动作不在白名单',
+    8: 'HDS故障',
+    9: '当前模式不支持'
+}
+
+def get_reason_description(reason: int) -> str:
+    """获取失败原因的中文描述"""
+    return REASON_DESCRIPTIONS.get(reason, f'未知原因({reason})')
 
 
 class DirectVelocityControl(Node):
@@ -154,7 +172,19 @@ class DirectVelocityControl(Node):
                 return False
                 
             res = future.result()
-            return res is not None and res.response.status.value == CommonState.SUCCESS
+            if res is not None and res.response.status.value == CommonState.SUCCESS:
+                return True
+            
+            # 获取失败原因
+            if res is not None:
+                reason = getattr(res.response.status, 'reason', 0)
+                if reason > 0:
+                    reason_desc = get_reason_description(reason)
+                    self.get_logger().warning(
+                        f"SetMcAction rejected: reason={reason} - {reason_desc}"
+                    )
+            
+            return False
         except Exception as e:
             self.get_logger().error(f"Error calling SetMcAction: {e}")
             return False
@@ -210,13 +240,18 @@ class DirectVelocityControl(Node):
         elif desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
             start_index = 0
         else:
-            start_index = 0
+            start_index = 1
             
         # Execute the sequence from the determined start point
         for i in range(start_index, len(sequence)):
             target = sequence[i]
             if not self.set_action(target) or not self.wait_for_action(target):
                 return False
+            
+            # 切换到双足站立后等待一会，让机器人稳定
+            if target == 'BIPED_STAND_DEFAULT':
+                self.get_logger().info('Waiting for robot to stabilize after standing up...')
+                time.sleep(2)
                 
         return True
 

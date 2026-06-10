@@ -39,6 +39,24 @@ from rclpy.node import Node
 from aimdk_msgs.msg import CommonRequest, CommonState
 from aimdk_msgs.srv import CaptureJpegImage
 
+# CommonState reason 字段对应的中文描述
+REASON_DESCRIPTIONS = {
+    0: '无错误',
+    1: '开箱状态中',
+    2: '开机自检中',
+    3: '关机状态中',
+    4: '当前形态不支持',
+    5: '低电量限制',
+    6: '正在充电中',
+    7: '动作不在白名单',
+    8: 'HDS故障',
+    9: '当前模式不支持'
+}
+
+def get_reason_description(reason: int) -> str:
+    """获取失败原因的中文描述"""
+    return REASON_DESCRIPTIONS.get(reason, f'未知原因({reason})')
+
 
 
 DEFAULT_SERVICE_NAME = "/aima/hal/camera/CaptureJpegImage"
@@ -165,6 +183,14 @@ class CaptureJpegClient(Node):
         code = response.response.header.code
         status = response.response.status.value
         if code != 0 and status != CommonState.SUCCESS:
+            # 获取失败原因
+            reason = getattr(response.response.status, 'reason', 0)
+            if reason > 0:
+                reason_desc = get_reason_description(reason)
+                self.get_logger().warning(
+                    f"CaptureJpegImage failed: reason={reason} - {reason_desc}"
+                )
+            
             self.get_logger().error(
                 "CaptureJpegImage failed. "
                 f"code={code} status={status} msg={response.response.message}"

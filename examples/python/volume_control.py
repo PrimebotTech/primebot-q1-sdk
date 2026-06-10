@@ -34,6 +34,24 @@ from rclpy.node import Node
 from aimdk_msgs.msg import CommonRequest, TtsPriorityLevel
 from aimdk_msgs.srv import GetMute, GetVolume, PlayTts, SetMute, SetVolume
 
+# CommonState reason 字段对应的中文描述
+REASON_DESCRIPTIONS = {
+    0: '无错误',
+    1: '开箱状态中',
+    2: '开机自检中',
+    3: '关机状态中',
+    4: '当前形态不支持',
+    5: '低电量限制',
+    6: '正在充电中',
+    7: '动作不在白名单',
+    8: 'HDS故障',
+    9: '当前模式不支持'
+}
+
+def get_reason_description(reason: int) -> str:
+    """获取失败原因的中文描述"""
+    return REASON_DESCRIPTIONS.get(reason, f'未知原因({reason})')
+
 TTS_TEXT = (
     "大家好，我是启元机器人。现在为你演示音频控制示例。"
     "接下来，我会先持续播报一段介绍内容，在播报过程中，系统会依次执行设置音量、查询音量、设置静音和查询静音等操作。"
@@ -160,6 +178,15 @@ class VolumeControlClient(Node):
             f"error_message={response.tts_resp.error_message}"
         )
 
+        if not response.tts_resp.is_success:
+            # 获取失败原因
+            reason = getattr(response.header.status, 'reason', 0)
+            if reason > 0:
+                reason_desc = get_reason_description(reason)
+                self.get_logger().warning(
+                    f"PlayTts rejected: reason={reason} - {reason_desc}"
+                )
+
         return response.tts_resp.is_success
 
     def execute_volume_step(self, target_volume: int, action_message: str) -> bool:
@@ -185,6 +212,14 @@ class VolumeControlClient(Node):
             f"audio_volume={set_response.audio_volume}"
         )
 
+        # 获取失败原因
+        reason = getattr(set_response.response.status, 'reason', 0)
+        if reason > 0:
+            reason_desc = get_reason_description(reason)
+            self.get_logger().warning(
+                f"SetVolume rejected: reason={reason} - {reason_desc}"
+            )
+
         get_request = GetVolume.Request()
         get_request.request = self._build_common_request()
 
@@ -200,6 +235,14 @@ class VolumeControlClient(Node):
             f"status={get_response.response.status.value} "
             f"audio_volume={get_response.audio_volume}"
         )
+
+        # 获取失败原因
+        reason = getattr(get_response.response.status, 'reason', 0)
+        if reason > 0:
+            reason_desc = get_reason_description(reason)
+            self.get_logger().warning(
+                f"GetVolume rejected: reason={reason} - {reason_desc}"
+            )
 
         if get_response.audio_volume != target_volume:
             self.get_logger().error(
@@ -237,6 +280,14 @@ class VolumeControlClient(Node):
             "(final result is verified by GetMute)"
         )
 
+        # 获取失败原因
+        reason = getattr(set_response.response.status, 'reason', 0)
+        if reason > 0:
+            reason_desc = get_reason_description(reason)
+            self.get_logger().warning(
+                f"SetMute rejected: reason={reason} - {reason_desc}"
+            )
+
         get_request = GetMute.Request()
         get_request.request = self._build_common_request()
 
@@ -250,6 +301,14 @@ class VolumeControlClient(Node):
             f"status={get_response.response.status.value} "
             f"is_mute={int(get_response.is_mute)}"
         )
+
+        # 获取失败原因
+        reason = getattr(get_response.response.status, 'reason', 0)
+        if reason > 0:
+            reason_desc = get_reason_description(reason)
+            self.get_logger().warning(
+                f"GetMute rejected: reason={reason} - {reason_desc}"
+            )
 
         if get_response.is_mute != target_mute:
             self.get_logger().error(
