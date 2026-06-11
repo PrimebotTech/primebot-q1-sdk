@@ -8,7 +8,7 @@ Locomotion control (walking/running) requires the robot to be in BIPED_WALK_RUN 
 
 Prerequisites auto-handled by this script:
   The script ensures a safe sequential transition path:
-  PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+  PASSIVE_DEFAULT -> STAND_UP -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
   Depending on the initial state, it enters the sequence at the appropriate step.
 
 Flow:
@@ -219,7 +219,9 @@ class DirectVelocityControl(Node):
             if desc is None:
                 self.get_logger().error("Action status remained None after 5 seconds of polling.")
 
-        if desc == 'BIPED_WALK_RUN' and status != McActionStatus.IDLE:
+        # 如果已经是走跑模式，直接返回
+        if desc == 'BIPED_WALK_RUN':
+            self.get_logger().info('Already in BIPED_WALK_RUN mode.')
             return True
 
         self.get_logger().info(f"Current state is {desc}. Starting state machine transition sequence...")
@@ -227,6 +229,7 @@ class DirectVelocityControl(Node):
         # Define the target sequence of states for walking
         sequence = [
             'PASSIVE_DEFAULT',
+            'STAND_UP',
             'BIPED_STAND_DEFAULT',
             'BIPED_WALK_RUN'
         ]
@@ -235,12 +238,15 @@ class DirectVelocityControl(Node):
         start_index = 0
         if desc == 'PASSIVE_DEFAULT':
             start_index = 1
-        elif desc == 'BIPED_STAND_DEFAULT':
+        elif desc == 'STAND_UP':
             start_index = 2
+        elif desc == 'BIPED_STAND_DEFAULT':
+            start_index = 3
         elif desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
             start_index = 0
         else:
-            start_index = 1
+            # If in other states, start from STAND_UP
+            start_index = 2
             
         # Execute the sequence from the determined start point
         for i in range(start_index, len(sequence)):
@@ -249,7 +255,7 @@ class DirectVelocityControl(Node):
                 return False
             
             # 切换到双足站立后等待一会，让机器人稳定
-            if target == 'BIPED_STAND_DEFAULT':
+            if target == 'STAND_UP':
                 self.get_logger().info('Waiting for robot to stabilize after standing up...')
                 time.sleep(2)
                 

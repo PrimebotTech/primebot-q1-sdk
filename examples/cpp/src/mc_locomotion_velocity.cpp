@@ -8,7 +8,7 @@
  * Prerequisites:
  *   - Robot must be in a safe environment for locomotion testing
  *   - MC (Motion Control) service must be running
- *   - State machine will auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+ *   - State machine will auto-transition: PASSIVE_DEFAULT -> STAND_UP -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
  *   - Input source registration with priority 80
  *
  * Usage:
@@ -392,8 +392,9 @@ public:
       }
     }
 
-    if (has_info && info.action_desc == "BIPED_WALK_RUN" &&
-        info.status != aimdk_msgs::msg::McActionStatus::IDLE) {
+    // 如果已经是走跑模式，直接返回
+    if (has_info && info.action_desc == "BIPED_WALK_RUN") {
+      RCLCPP_INFO(this->get_logger(), "Already in BIPED_WALK_RUN mode.");
       return true;
     }
 
@@ -401,8 +402,10 @@ public:
                 "Current state is %s. Starting state machine transition sequence...",
                 info.action_desc.c_str());
 
+    // Define the target sequence of states for walking
     std::vector<std::string> sequence = {
       "PASSIVE_DEFAULT",
+      "STAND_UP",
       "BIPED_STAND_DEFAULT",
       "BIPED_WALK_RUN"
     };
@@ -410,12 +413,15 @@ public:
     size_t start_index = 0;
     if (info.action_desc == "PASSIVE_DEFAULT") {
         start_index = 1;
-    } else if (info.action_desc == "BIPED_STAND_DEFAULT") {
+    } else if (info.action_desc == "STAND_UP") {
         start_index = 2;
+    } else if (info.action_desc == "BIPED_STAND_DEFAULT") {
+        start_index = 3;
     } else if (info.action_desc == "DAMPING_DEFAULT" || info.action_desc == "STORE_DEFAULT") {
         start_index = 0;
     } else {
-        start_index = 1;
+        // If in other states, start from STAND_UP
+        start_index = 2;
     }
 
     for (size_t i = start_index; i < sequence.size(); ++i) {
@@ -424,7 +430,7 @@ public:
         }
         
         // 切换到双足站立后等待一会，让机器人稳定
-        if (sequence[i] == "BIPED_STAND_DEFAULT") {
+        if (sequence[i] == "STAND_UP") {
             RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
             std::this_thread::sleep_for(std::chrono::seconds(2));
         }
