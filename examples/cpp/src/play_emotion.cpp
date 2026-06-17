@@ -108,14 +108,15 @@ class PlayEmotionClient : public rclcpp::Node
     try {
       if (!validate_parameters()) return false;
 
-      // 第一步：尝试原始请求 (默认为 ID 10)
-      bool ok = call_service(type_, emotion_ids_, file_paths_);
-
-      // 第二步：降级逻辑 (兼容 Q 系列机型)
-      // 如果尝试 ID 10 失败，自动尝试保底 ID 3003
-      if (!ok && type_ == "emotion" && std::find(emotion_ids_.begin(), emotion_ids_.end(), 10) != emotion_ids_.end()) {
-        ok = call_service("emotion", {3003}, {});
-      }
+       // Q1 直接使用 3003，不尝试 10
+      std::vector<int64_t> emotion_ids_to_use = emotion_ids_;
+      if (type_ == "emotion" && std::find(emotion_ids_.begin(), emotion_ids_.end(), 10) != emotion_ids_.end()) {
+      // Q1 不支持 ID 10，直接使用 3003
+      RCLCPP_INFO(this->get_logger(), "Detected ID 10 on Q1, switching to 3003.");
+      emotion_ids_to_use = {3003};
+    }
+    
+    bool ok = call_service(type_, emotion_ids_to_use, file_paths_);
 
       if (!ok) {
         RCLCPP_ERROR(this->get_logger(), "PlayEmotion request failed after all attempts.");
