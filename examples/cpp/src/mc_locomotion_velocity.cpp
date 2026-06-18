@@ -356,7 +356,7 @@ public:
   }
 
   bool wait_for_action(const std::string &target,
-                       std::chrono::seconds timeout = std::chrono::seconds(10)) {
+                       std::chrono::seconds timeout = std::chrono::seconds(20)) {
     auto deadline = std::chrono::steady_clock::now() + timeout;
     while (std::chrono::steady_clock::now() < deadline) {
       ActionInfo info;
@@ -432,12 +432,16 @@ public:
     }
 
     for (size_t i = start_index; i < sequence.size(); ++i) {
-        if (!set_action(sequence[i]) || !wait_for_action(sequence[i])) {
+        const std::string& target_state = sequence[i];
+        // When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
+        const std::string& wait_state = (target_state == "STAND_UP") ? "BIPED_WALK_RUN" : target_state;
+        
+        if (!set_action(target_state) || !wait_for_action(wait_state)) {
             return false;
         }
         
-        // 切换到双足站立后等待一会，让机器人稳定
-        if (sequence[i] == "STAND_UP") {
+        // 切换到双足站立或走跑模式后等待一会，让机器人稳定
+        if (target_state == "STAND_UP" || target_state == "BIPED_WALK_RUN") {
             RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
             std::this_thread::sleep_for(std::chrono::seconds(2));
         }

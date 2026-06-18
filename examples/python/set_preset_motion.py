@@ -151,7 +151,7 @@ class SetMcPresetMotionClient(Node):
             self.get_logger().error(f'Error calling SetMcAction: {e}')
             return False
 
-    def wait_for_action(self, target_desc: str, timeout_sec: float = 10.0) -> bool:
+    def wait_for_action(self, target_desc: str, timeout_sec: float = 20.0) -> bool:
         deadline = time.monotonic() + timeout_sec
         while time.monotonic() < deadline:
             _, desc, status = self.get_action_status()
@@ -186,6 +186,7 @@ class SetMcPresetMotionClient(Node):
         # Define the target sequence of states
         sequence = [
             'PASSIVE_DEFAULT',
+            'STAND_UP',
             'BIPED_STAND_DEFAULT',
             'BIPED_WALK_RUN',
             'BIPED_WHOLE_BODY_CTRL'
@@ -195,22 +196,31 @@ class SetMcPresetMotionClient(Node):
         start_index = 0
         if desc == 'PASSIVE_DEFAULT':
             start_index = 1
-        elif desc == 'BIPED_STAND_DEFAULT':
+        elif desc == 'STAND_UP':
             start_index = 2
-        elif desc == 'BIPED_WALK_RUN':
+        elif desc == 'BIPED_STAND_DEFAULT':
             start_index = 3
+        elif desc == 'BIPED_WALK_RUN':
+            start_index = 4
         elif desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
             start_index = 0
         else:
             # For any other unknown state, safer to start from PASSIVE_DEFAULT
-            start_index = 0
+            start_index = 2
             
         # Execute the sequence from the determined start point
         for i in range(start_index, len(sequence)):
             target = sequence[i]
-            if not self.set_action(target) or not self.wait_for_action(target):
+            waitstatus=target
+            if target=='STAND_UP':
+                waitstatus='BIPED_WALK_RUN'
+            if not self.set_action(target) or not self.wait_for_action(waitstatus):
                 return False
-                
+            
+            if target == 'STAND_UP' or target == 'BIPED_WALK_RUN':
+                self.get_logger().info('Waiting for robot to stabilize after standing up...')
+                time.sleep(2)
+            
         return True
 
     def send_motion_request(self, motion_id: int) -> bool:

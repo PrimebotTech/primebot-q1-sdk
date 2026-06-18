@@ -196,7 +196,7 @@ class DirectVelocityControl(Node):
             self.get_logger().error(f"Error calling SetMcAction: {e}")
             return False
 
-    def wait_for_action(self, target_desc: str, timeout_sec: float = 10.0) -> bool:
+    def wait_for_action(self, target_desc: str, timeout_sec: float = 20.0) -> bool:
         deadline = time.monotonic() + timeout_sec
         while time.monotonic() < deadline:
             _, desc, status = self.get_action_status()
@@ -258,11 +258,14 @@ class DirectVelocityControl(Node):
         # Execute the sequence from the determined start point
         for i in range(start_index, len(sequence)):
             target = sequence[i]
-            if not self.set_action(target) or not self.wait_for_action(target):
+            waitstatus=target
+            if target=='STAND_UP':
+                waitstatus='BIPED_WALK_RUN'
+            if not self.set_action(target) or not self.wait_for_action(waitstatus):
                 return False
             
             # 切换到双足站立后等待一会，让机器人稳定
-            if target == 'STAND_UP':
+            if target == 'STAND_UP' or target == 'BIPED_WALK_RUN':
                 self.get_logger().info('Waiting for robot to stabilize after standing up...')
                 time.sleep(2)
                 

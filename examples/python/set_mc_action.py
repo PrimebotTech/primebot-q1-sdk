@@ -140,8 +140,8 @@ class SetMcActionClient(Node):
 
                 # Execute SetMcAction
                 if self.set_action(target_action):
-                    # Poll for success within 5 seconds
-                    if self.wait_for_action(target_action, timeout_sec=5.0):
+                    # Poll for success within 20 seconds
+                    if self.wait_for_action(target_action, timeout_sec=20.0):
                         print("\nSwitch succeeded!")
                     else:
                         print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
@@ -161,6 +161,7 @@ class SetMcActionClient(Node):
                 self.get_logger().info(f'Current state is {current_desc}. Starting state machine transition sequence...')
                 sequence = [
                     'PASSIVE_DEFAULT',
+                    'STAND_UP',
                     'BIPED_STAND_DEFAULT',
                     'BIPED_WALK_RUN'
                 ]
@@ -169,15 +170,29 @@ class SetMcActionClient(Node):
                 start_index = 0
                 if current_desc == 'PASSIVE_DEFAULT':
                     start_index = 1
-                elif current_desc == 'BIPED_STAND_DEFAULT':
+                elif current_desc == 'STAND_UP':
                     start_index = 2
-                
+                elif current_desc == 'BIPED_STAND_DEFAULT':
+                    start_index = 3
+                elif current_desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
+                    start_index = 0
+                else:
+                    # For any other unknown state, safer to start from STAND_UP
+                    start_index = 2
                 # Execute the required sequence of states
                 for i in range(start_index, len(sequence)):
                     target = sequence[i]
+                    # When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
+                    waitstatus = 'BIPED_WALK_RUN' if target == 'STAND_UP' else target
+                    
                     self.get_logger().info(f'Pre-requisite: Switching to {target}...')
-                    if not self.set_action(target) or not self.wait_for_action(target):
+                    if not self.set_action(target) or not self.wait_for_action(waitstatus, timeout_sec=20.0):
                         return False
+                    
+                    # 切换到双足站立或走跑模式后等待一会，让机器人稳定
+                    if target == 'STAND_UP' or target == 'BIPED_WALK_RUN':
+                        self.get_logger().info('Waiting for robot to stabilize after standing up...')
+                        time.sleep(2)
 
             # Execute final target motion
             if not self.set_motion(self.motion, self.interrupt):
@@ -354,7 +369,7 @@ class SetMcActionClient(Node):
     def wait_for_action(
         self,
         expected_action_desc: str,
-        timeout_sec: float = 10.0,
+        timeout_sec: float = 20.0,
         poll_interval_sec: float = 0.2,
     ) -> bool:
         deadline = time.monotonic() + timeout_sec
