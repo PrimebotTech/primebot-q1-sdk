@@ -50,33 +50,6 @@
 #include <unordered_map>
 #include <vector>
 
-// CommonState reason 字段对应的中文描述
-const std::unordered_map<uint32_t, std::string> kReasonDescriptions = {
-    {0, "无错误"},
-    {1, "开箱状态中"},
-    {2, "开机自检中"},
-    {3, "关机状态中"},
-    {4, "当前形态不支持"},
-    {5, "低电量限制"},
-    {6, "正在充电中"},
-    {7, "动作不在白名单"},
-    {8, "HDS故障"},
-    {9, "当前模式不支持"},
-    {10, "前方有障碍物"},
-    {11, "后方有障碍物"},
-    {12, "左方有障碍物"},
-    {13, "右方有障碍物"},
-    {14, "上方有障碍物"}
-};
-
-std::string GetReasonDescription(uint32_t reason) {
-  auto it = kReasonDescriptions.find(reason);
-  if (it != kReasonDescriptions.end()) {
-    return it->second;
-  }
-  return "未知原因(" + std::to_string(reason) + ")";
-}
-
 constexpr double kServiceCallTimeoutSec = 3.0;
 constexpr int kMaxRetryCount = 3;
 
@@ -340,21 +313,19 @@ public:
       return true;
     }
     
-    // 获取失败原因
     if (res) {
-      uint32_t reason = res->response.status.reason;
-      if (reason > 0) {
-        std::string reason_desc = GetReasonDescription(reason);
-        RCLCPP_WARN(this->get_logger(), "SetMcAction rejected: reason=%u - %s",
-                    reason, reason_desc.c_str());
-      }
+      RCLCPP_ERROR(this->get_logger(),
+                   "SetMcAction failed. code=%ld status=%d msg=%s",
+                   res->response.header.code,
+                   res->response.status.value,
+                   res->response.message.c_str());
     }
     
     return false;
   }
 
   bool wait_for_action(const std::string &target,
-                       std::chrono::seconds timeout = std::chrono::seconds(10)) {
+                       std::chrono::seconds timeout = std::chrono::seconds(20)) {
     auto deadline = std::chrono::steady_clock::now() + timeout;
     while (std::chrono::steady_clock::now() < deadline) {
       ActionInfo info;
@@ -430,12 +401,16 @@ public:
     }
 
     for (size_t i = start_index; i < sequence.size(); ++i) {
-        if (!set_action(sequence[i]) || !wait_for_action(sequence[i])) {
+        const std::string& target_state = sequence[i];
+        // When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
+        const std::string& wait_state = (target_state == "STAND_UP") ? "BIPED_WALK_RUN" : target_state;
+        
+        if (!set_action(target_state) || !wait_for_action(wait_state)) {
             return false;
         }
         
-        // 切换到双足站立后等待一会，让机器人稳定
-        if (sequence[i] == "STAND_UP") {
+        // 切换到双足站立或走跑模式后等待一会，让机器人稳定
+        if (target_state == "STAND_UP" || target_state == "BIPED_WALK_RUN") {
             RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
             std::this_thread::sleep_for(std::chrono::seconds(2));
         }

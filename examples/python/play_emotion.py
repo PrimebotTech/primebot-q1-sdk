@@ -37,29 +37,6 @@ from rclpy.parameter import Parameter
 from aimdk_msgs.msg import CommonRequest, CommonState
 from aimdk_msgs.srv import PlayEmotion
 
-# CommonState reason 字段对应的中文描述
-REASON_DESCRIPTIONS = {
-    0: '无错误',
-    1: '开箱状态中',
-    2: '开机自检中',
-    3: '关机状态中',
-    4: '当前形态不支持',
-    5: '低电量限制',
-    6: '正在充电中',
-    7: '动作不在白名单',
-    8: 'HDS故障',
-    9: '当前模式不支持',
-    10: '前方有障碍物',
-    11: '后方有障碍物',
-    12: '左方有障碍物',
-    13: '右方有障碍物',
-    14: '上方有障碍物'
-}
-
-def get_reason_description(reason: int) -> str:
-    """获取失败原因的中文描述"""
-    return REASON_DESCRIPTIONS.get(reason, f'未知原因({reason})')
-
 
 class PlayEmotionClient(Node):
     def __init__(self):
@@ -92,15 +69,14 @@ class PlayEmotionClient(Node):
             if not self.validate_parameters():
                 return False
 
-            # 一套代码兼容不同机型，T系列默认ID=10，Q系列默认ID=3003
-            # 第一步：尝试原始请求（默认 ID 为 10）
-            ok = self._call_service(self.type, list(self.emotion_ids), list(self.file_paths))
-
-            # 第二步：降级逻辑
-            # 如果是播放表情模式，且尝试 ID 10 失败，则自动尝试播放保底 ID 3003
-            if not ok and self.type == "emotion" and 10 in self.emotion_ids:
-                # 尝试播放保底表情 3003
-                ok = self._call_service("emotion", [3003], [])
+             # Q1 直接使用 3003，不尝试 10
+            emotion_ids_to_use = list(self.emotion_ids)
+            if self.type == "emotion" and 10 in self.emotion_ids:
+                # Q1 不支持 ID 10，直接使用 3003
+                self.get_logger().info("Detected ID 10 on Q1, switching to 3003.")
+                emotion_ids_to_use = [3003]
+        
+            ok = self._call_service(self.type, emotion_ids_to_use, list(self.file_paths))
 
             if not ok:
                 self.get_logger().error("PlayEmotion request failed after all attempts.")
@@ -149,15 +125,11 @@ class PlayEmotionClient(Node):
             self.get_logger().info(f"Request accepted (code={code}, status={status}).")
             return True
 
-        # 获取失败原因
-        reason = getattr(response.header.status, 'reason', 0)
-        if reason > 0:
-            reason_desc = get_reason_description(reason)
-            self.get_logger().warning(
-                f"PlayEmotion rejected: reason={reason} - {reason_desc}"
-            )
-
-        self.get_logger().warning(f"Request rejected by service (code={code}, status={status}).")
+        self.get_logger().error(
+            f"PlayEmotion failed. "
+            f"code={code} status={status} "
+            f"msg={response.header.message}"
+        )
         return False
 
     def validate_parameters(self) -> bool:

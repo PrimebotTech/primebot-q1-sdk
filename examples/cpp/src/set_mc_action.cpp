@@ -42,33 +42,6 @@
 #include <thread>
 #include <unordered_map>
 
-// CommonState reason 字段对应的中文描述
-const std::unordered_map<uint32_t, std::string> kReasonDescriptions = {
-    {0, "无错误"},
-    {1, "开箱状态中"},
-    {2, "开机自检中"},
-    {3, "关机状态中"},
-    {4, "当前形态不支持"},
-    {5, "低电量限制"},
-    {6, "正在充电中"},
-    {7, "动作不在白名单"},
-    {8, "HDS故障"},
-    {9, "当前模式不支持"},
-    {10, "前方有障碍物"},
-    {11, "后方有障碍物"},
-    {12, "左方有障碍物"},
-    {13, "右方有障碍物"},
-    {14, "上方有障碍物"}
-};
-
-std::string GetReasonDescription(uint32_t reason) {
-  auto it = kReasonDescriptions.find(reason);
-  if (it != kReasonDescriptions.end()) {
-    return it->second;
-  }
-  return "未知原因(" + std::to_string(reason) + ")";
-}
-
 constexpr double kServiceCallTimeoutSec = 2.0;
 constexpr int kMaxRetryCount = 3;
 
@@ -142,8 +115,8 @@ public:
 
       // Execute SetMcAction
       if (set_action(target_action)) {
-        // Poll for success within 5 seconds
-        if (wait_for_action(target_action, std::chrono::seconds(5))) {
+        // Poll for success within 20 seconds
+        if (wait_for_action(target_action, std::chrono::seconds(20))) {
           std::cout << "\nSwitch succeeded!" << std::endl;
         } else {
           std::cout << "Switch failed, please confirm if the expected Action "
@@ -174,23 +147,41 @@ public:
                     "sequence...",
                     current.action_desc.c_str());
         std::vector<std::string> sequence = {
-            "PASSIVE_DEFAULT", "BIPED_STAND_DEFAULT", "BIPED_WALK_RUN"};
+            "PASSIVE_DEFAULT", "STAND_UP", "BIPED_STAND_DEFAULT", "BIPED_WALK_RUN"};
 
         // Determine starting point in the sequence to skip redundant steps
         size_t start_index = 0;
         if (current.action_desc == "PASSIVE_DEFAULT") {
           start_index = 1;
+        } else if (current.action_desc == "STAND_UP") {
+          start_index = 2;
         } else if (current.action_desc == "BIPED_STAND_DEFAULT") {
+          start_index = 3;
+        } else if (current.action_desc == "BIPED_WALK_RUN") {
+          start_index = 4;
+        } else if (current.action_desc == "DAMPING_DEFAULT" || current.action_desc == "STORE_DEFAULT") {
+          start_index = 0;
+        } else {
+          // For any other unknown state, safer to start from STAND_UP
           start_index = 2;
         }
 
         // Execute the required sequence of states
         for (size_t i = start_index; i < sequence.size(); ++i) {
-          const std::string &target = sequence[i];
+          const std::string &target_state = sequence[i];
+          // When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
+          const std::string &wait_state = (target_state == "STAND_UP") ? "BIPED_WALK_RUN" : target_state;
+          
           RCLCPP_INFO(this->get_logger(), "Pre-requisite: Switching to %s...",
-                      target.c_str());
-          if (!set_action(target) || !wait_for_action(target)) {
+                      target_state.c_str());
+          if (!set_action(target_state) || !wait_for_action(wait_state, std::chrono::seconds(20))) {
             return false;
+          }
+          
+          // 切换到双足站立或走跑模式后等待一会，让机器人稳定
+          if (target_state == "STAND_UP" || target_state == "BIPED_WALK_RUN") {
+            RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
+            std::this_thread::sleep_for(std::chrono::seconds(2));
           }
         }
       }
@@ -306,15 +297,10 @@ private:
         return true;
       }
 
-      // 获取失败原因
-      uint32_t reason = response->response.status.reason;
-      if (reason > 0) {
-        std::string reason_desc = GetReasonDescription(reason);
-        RCLCPP_WARN(this->get_logger(), "SetMcAction rejected: reason=%u - %s",
-                    reason, reason_desc.c_str());
-      }
-
-      RCLCPP_ERROR(this->get_logger(), "Failed to set robot mode: %s",
+      RCLCPP_ERROR(this->get_logger(),
+                   "SetMcAction failed. code=%ld status=%d msg=%s",
+                   response->response.header.code,
+                   response->response.status.value,
                    response->response.message.c_str());
       return false;
     } catch (const std::exception &e) {
@@ -384,7 +370,7 @@ private:
 
   bool wait_for_action(
       const std::string &expected_action_desc,
-      std::chrono::seconds timeout = std::chrono::seconds(10),
+      std::chrono::seconds timeout = std::chrono::seconds(20),
       std::chrono::milliseconds poll_interval = std::chrono::milliseconds(200)) {
     auto deadline = std::chrono::steady_clock::now() + timeout;
 
