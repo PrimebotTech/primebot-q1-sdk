@@ -129,7 +129,8 @@ def main(args=None):
         b = 0
         period = 0
 
-        if led_strip_mode == LedStripCommand.Request.LED_CUSTOM:
+        if led_strip_mode in (LedStripCommand.Request.LED_CUSTOM_BREATH, 
+                              LedStripCommand.Request.LED_CUSTOM_BLINK):
             r = read_int("Enter r (default 0): ", 0)
             g = read_int("Enter g (default 0): ", 0)
             b = read_int("Enter b (default 255): ", 255)

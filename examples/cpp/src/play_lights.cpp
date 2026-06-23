@@ -167,8 +167,8 @@ int main(int argc, char *argv[]) {
     std::cin >> mode_input;
     led_strip_mode = static_cast<uint8_t>(mode_input);
 
-    if (led_strip_mode ==
-        aimdk_msgs::srv::LedStripCommand::Request::LED_CUSTOM) {
+     if (led_strip_mode == aimdk_msgs::srv::LedStripCommand::Request::LED_CUSTOM_BREATH ||
+         led_strip_mode == aimdk_msgs::srv::LedStripCommand::Request::LED_CUSTOM_BLINK) {
       int channel_input = 0;
       int period_input = 1000;
 
