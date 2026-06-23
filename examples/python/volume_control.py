@@ -31,7 +31,7 @@ import rclpy
 import rclpy.logging
 from rclpy.node import Node
 
-from aimdk_msgs.msg import CommonRequest, TtsPriorityLevel
+from aimdk_msgs.msg import CommonRequest, CommonState, TtsPriorityLevel
 from aimdk_msgs.srv import GetMute, GetVolume, PlayTts, SetMute, SetVolume
 
 TTS_TEXT = (
@@ -197,7 +197,7 @@ class VolumeControlClient(Node):
                 f"SetVolume failed. "
                 f"code={set_response.response.header.code} "
                 f"status={set_response.response.status.value} "
-                f"msg={set_response.response.message}"
+                f"reason={set_response.response.status.reason}"
             )
             return False
 
@@ -222,7 +222,7 @@ class VolumeControlClient(Node):
                 f"GetVolume failed. "
                 f"code={get_response.response.header.code} "
                 f"status={get_response.response.status.value} "
-                f"msg={get_response.response.message}"
+                f"reason={get_response.response.status.reason}"
             )
             return False
 
@@ -267,7 +267,7 @@ class VolumeControlClient(Node):
                 f"SetMute failed. "
                 f"code={set_response.response.header.code} "
                 f"status={set_response.response.status.value} "
-                f"msg={set_response.response.message}"
+                f"reason={set_response.response.status.reason}"
             )
             return False
 
@@ -290,7 +290,7 @@ class VolumeControlClient(Node):
                 f"GetMute failed. "
                 f"code={get_response.response.header.code} "
                 f"status={get_response.response.status.value} "
-                f"msg={get_response.response.message}"
+                f"reason={get_response.response.status.reason}"
             )
             return False
 

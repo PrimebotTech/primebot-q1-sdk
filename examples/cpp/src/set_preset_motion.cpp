@@ -139,10 +139,10 @@ public:
       
       if (response) {
         RCLCPP_ERROR(this->get_logger(),
-                     "SetMcPresetMotion failed. code=%ld status=%d msg=%s",
+                     "SetMcPresetMotion failed. code=%ld status=%d reason=%u",
                      response->response.header.code,
                      response->response.state.value,
-                     response->response.header.message.c_str());
+                     response->response.state.reason);
       }
       
       return false;
