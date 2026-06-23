@@ -227,7 +227,7 @@ class SetMcPresetMotionClient(Node):
             self.get_logger().error(
                 f'SetMcPresetMotion failed. '
                 f'code={res.response.header.code} status={res.response.header.status.value} '
-                f'msg={res.response.header.message}'
+                f'reason={res.response.header.status.reason}'
             )
         
         return False

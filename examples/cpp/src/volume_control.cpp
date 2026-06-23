@@ -306,10 +306,10 @@ class VolumeControlClient : public rclcpp::Node
 
     if (!response->tts_resp.is_success) {
       RCLCPP_ERROR(this->get_logger(),
-                   "PlayTts failed. code=%ld status=%d msg=%s",
+                   "PlayTts failed. code=%ld status=%d reason=%u",
                    response->header.header.code,
                    response->header.status.value,
-                   response->header.header.message.c_str());
+                   response->header.status.reason);
     }
 
     return response->tts_resp.is_success;
@@ -335,10 +335,10 @@ class VolumeControlClient : public rclcpp::Node
     if (set_response->response.header.code != 0 || 
         set_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
       RCLCPP_ERROR(this->get_logger(),
-                   "SetVolume failed. code=%ld status=%d msg=%s",
+                   "SetVolume failed. code=%ld status=%d reason=%u",
                    set_response->response.header.code,
                    set_response->response.status.value,
-                   set_response->response.message.c_str());
+                   set_response->response.status.reason);
       return false;
     }
 
@@ -352,15 +352,15 @@ class VolumeControlClient : public rclcpp::Node
                 get_response->response.status.value,
                 get_response->audio_volume);
 
-    if (get_response->response.header.code != 0 || 
-        get_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
-      RCLCPP_ERROR(this->get_logger(),
-                   "GetVolume failed. code=%ld status=%d msg=%s",
-                   get_response->response.header.code,
-                   get_response->response.status.value,
-                   get_response->response.message.c_str());
-      return false;
-    }
+     if (get_response->response.header.code != 0 || 
+         get_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
+       RCLCPP_ERROR(this->get_logger(),
+                    "GetMute failed. code=%ld status=%d reason=%u",
+                    get_response->response.header.code,
+                    get_response->response.status.value,
+                    get_response->response.status.reason);
+       return false;
+     }
 
     if (get_response->audio_volume != target_volume) {
       RCLCPP_ERROR(this->get_logger(),
@@ -403,10 +403,10 @@ class VolumeControlClient : public rclcpp::Node
     if (set_response->response.header.code != 0 || 
         set_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
       RCLCPP_ERROR(this->get_logger(),
-                   "SetMute failed. code=%ld status=%d msg=%s",
+                   "SetMute failed. code=%ld status=%d reason=%u",
                    set_response->response.header.code,
                    set_response->response.status.value,
-                   set_response->response.message.c_str());
+                   set_response->response.status.reason);
       return false;
     }
 
@@ -426,10 +426,10 @@ class VolumeControlClient : public rclcpp::Node
     if (get_response->response.header.code != 0 || 
         get_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
       RCLCPP_ERROR(this->get_logger(),
-                   "GetMute failed. code=%ld status=%d msg=%s",
+                   "GetMute failed. code=%ld status=%d reason=%u",
                    get_response->response.header.code,
                    get_response->response.status.value,
-                   get_response->response.message.c_str());
+                   get_response->response.status.reason);
       return false;
     }
 
