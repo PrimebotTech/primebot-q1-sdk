@@ -8,6 +8,7 @@ find_package(OpenCV REQUIRED COMPONENTS core videoio)
 find_package(ruckig_for_primebot REQUIRED)
 
 set(EXAMPLE_TARGETS
+  custom_upper_control
   get_audio_stream
   get_bms_state
   get_jpg
