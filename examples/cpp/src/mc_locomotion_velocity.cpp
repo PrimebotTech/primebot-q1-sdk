@@ -1,28 +1,28 @@
-/**
- * MC Locomotion Velocity Control Example Script
- *
- * Description:
- *   This script demonstrates how to control robot walking/running velocity via the /aima/mc/locomotion/velocity topic.
- *   Supports forward/backward, lateral, and angular velocity control with automatic state machine transitions.
- *
- * Prerequisites:
- *   - Robot must be in a safe environment for locomotion testing
- *   - MC (Motion Control) service must be running
- *   - State machine will auto-transition: PASSIVE_DEFAULT -> STAND_UP -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
- *   - Input source registration with priority 80
- *
- * Usage:
- *   ros2 run aimdk_examples_cpp mc_locomotion_velocity
- *   At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
- *   unexpected motion. Avoid issuing commands in this range.
- *
- * Example:
- *   ros2 run aimdk_examples_cpp mc_locomotion_velocity
- *
- * Parameters:
- *   - forward_velocity: Forward/backward velocity in m/s (positive=forward, negative=backward)
- *   - lateral_velocity: Left/right lateral velocity in m/s (positive=left, negative=right)
- *   - angular_velocity: Rotation velocity in rad/s (positive=left, negative=right)
+/*
+ MC Locomotion Velocity Control Example Script
+ 
+ Description:
+   This script demonstrates how to control robot walking/running velocity via the /aima/mc/locomotion/velocity topic.
+   Supports forward/backward, lateral, and angular velocity control with automatic state machine transitions.
+ 
+ Prerequisites:
+   - Robot must be in a safe environment for locomotion testing
+   - MC (Motion Control) service must be running
+   - State machine will auto-transition: PASSIVE_DEFAULT -> STAND_UP -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+   - Input source registration with priority 80
+ 
+ Usage:
+   ros2 run aimdk_examples_cpp mc_locomotion_velocity
+   At very low speeds or near velocity limits, the control system may trigger balance compensation, causing
+   unexpected motion. Avoid issuing commands in this range.
+ 
+ Example:
+   ros2 run aimdk_examples_cpp mc_locomotion_velocity
+ 
+ Parameters:
+   - forward_velocity: Forward/backward velocity in m/s (positive=forward, negative=backward)
+   - lateral_velocity: Left/right lateral velocity in m/s (positive=left, negative=right)
+   - angular_velocity: Rotation velocity in rad/s (positive=left, negative=right)
  */
 #include "aimdk_msgs/msg/mc_locomotion_velocity.hpp"
 #include "aimdk_msgs/msg/common_request.hpp"

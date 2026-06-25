@@ -1,22 +1,22 @@
-/**
- * Touch State Monitor Example Script
- *
- * Description:
- *   This script demonstrates how to subscribe to the robot's touch state topic.
- *   It displays real-time touch event information including event type, timestamp, and sequence number.
- *
- * Prerequisites:
- *   - Robot touch sensor service must be running
- *   - Touch sensor hardware must be operational
- *
- * Usage:
- *   ros2 run aimdk_examples_cpp get_touch_state
- *
- * Example:
- *   ros2 run aimdk_examples_cpp get_touch_state
- *
- * Parameters:
- *   - None
+/*
+ Touch State Monitor Example Script
+ 
+ Description:
+   This script demonstrates how to subscribe to the robot's touch state topic.
+   It displays real-time touch event information including event type, timestamp, and sequence number.
+ 
+ Prerequisites:
+   - Robot touch sensor service must be running
+   - Touch sensor hardware must be operational
+ 
+ Usage:
+   ros2 run aimdk_examples_cpp get_touch_state
+ 
+ Example:
+   ros2 run aimdk_examples_cpp get_touch_state
+ 
+ Parameters:
+   - None
  */
 
 #include "aimdk_msgs/msg/touch_state.hpp"
