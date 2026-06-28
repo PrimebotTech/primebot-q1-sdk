@@ -1,22 +1,22 @@
-/**
- * BMS State Monitor Example Script
- *
- * Description:
- *   This script demonstrates how to subscribe to the robot's Battery Management System (BMS) state topic.
- *   It displays real-time battery information including voltage, current, temperature, and remaining capacity.
- *
- * Prerequisites:
- *   - Robot BMS service must be running
- *   - Battery must be connected and operational
- *
- * Usage:
- *   ros2 run aimdk_examples_cpp get_bms_state
- *
- * Example:
- *   ros2 run aimdk_examples_cpp get_bms_state
- *
- * Parameters:
- *   - None
+/*
+ BMS State Monitor Example Script
+ 
+ Description:
+   This script demonstrates how to subscribe to the robot's Battery Management System (BMS) state topic.
+   It displays real-time battery information including voltage, current, temperature, and remaining capacity.
+ 
+ Prerequisites:
+   - Robot BMS service must be running
+   - Battery must be connected and operational
+ 
+ Usage:
+   ros2 run aimdk_examples_cpp get_bms_state
+ 
+ Example:
+   ros2 run aimdk_examples_cpp get_bms_state
+ 
+ Parameters:
+   - None
  */
 
 #include "aimdk_msgs/msg/bms.hpp"

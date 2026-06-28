@@ -1,31 +1,31 @@
-/**
- * RTSP Video Stream Reader Example Script
- *
- * Description:
- *   This script demonstrates how to read video streams from the robot's cameras via RTSP protocol.
- *   Supports multiple camera devices and saves video to MP4 format.
- *
- * Prerequisites:
- *   - Robot RTSP service must be running
- *   - Camera hardware must be operational
- *   - OpenCV must be installed
- *   - Network connection to robot must be available
- *
- * Usage:
- *   ros2 run aimdk_examples_cpp get_video_stream --camera <camera_id> --ip <robot_ip> --output <path> --duration <seconds>
- *
- * Example:
- *   # Interactive mode (will prompt for camera and IP)
- *   ros2 run aimdk_examples_cpp get_video_stream
- *   
- *   # Specify camera, IP, and output path
- *   ros2 run aimdk_examples_cpp get_video_stream --camera head_stereo_left --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
- *
- * Parameters:
- *   - camera_id: Camera identifier (interactive prompt if not provided)
- *   - robot_ip: Robot IP address (interactive prompt if not provided)
- *   - output_file: MP4 output file path (default: /tmp/video_capture.mp4)
- *   - capture_seconds: Stop automatically after this many seconds (default: 5.0)
+/*
+ RTSP Video Stream Reader Example Script
+ 
+ Description:
+   This script demonstrates how to read video streams from the robot's cameras via RTSP protocol.
+   Supports multiple camera devices and saves video to MP4 format.
+ 
+ Prerequisites:
+   - Robot RTSP service must be running
+   - Camera hardware must be operational
+   - OpenCV must be installed
+   - Network connection to robot must be available
+ 
+ Usage:
+   ros2 run aimdk_examples_cpp get_video_stream --camera <camera_id> --ip <robot_ip> --output <path> --duration <seconds>
+ 
+ Example:
+   # Interactive mode (will prompt for camera and IP)
+   ros2 run aimdk_examples_cpp get_video_stream
+   
+   # Specify camera, IP, and output path
+   ros2 run aimdk_examples_cpp get_video_stream --camera head_stereo_left --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
+ 
+ Parameters:
+   - camera_id: Camera identifier (interactive prompt if not provided)
+   - robot_ip: Robot IP address (interactive prompt if not provided)
+   - output_file: MP4 output file path (default: /tmp/video_capture.mp4)
+   - capture_seconds: Stop automatically after this many seconds (default: 5.0)
  */
 
 #include <opencv2/core.hpp>
