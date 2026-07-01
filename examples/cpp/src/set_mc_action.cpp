@@ -154,7 +154,7 @@ public:
         if (current.action_desc == "PASSIVE_DEFAULT") {
           start_index = 1;
         } else if (current.action_desc == "STAND_UP") {
-          start_index = 2;
+          start_index = 3;
         } else if (current.action_desc == "BIPED_STAND_DEFAULT") {
           start_index = 3;
         } else if (current.action_desc == "BIPED_WALK_RUN") {

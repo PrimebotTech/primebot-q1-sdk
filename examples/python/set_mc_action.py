@@ -146,7 +146,7 @@ class SetMcActionClient(Node):
                 if current_desc == 'PASSIVE_DEFAULT':
                     start_index = 1
                 elif current_desc == 'STAND_UP':
-                    start_index = 2
+                    start_index = 3
                 elif current_desc == 'BIPED_STAND_DEFAULT':
                     start_index = 3
                 elif current_desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
