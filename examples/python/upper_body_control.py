@@ -177,6 +177,8 @@ class CustomUpperControlNode(Node):
         sequence = [
             "PASSIVE_DEFAULT",
             "STAND_UP",
+            "BIPED_STAND_DEFAULT",
+            "BIPED_WALK_RUN",
             "BIPED_CUSTOM_UPPER",
         ]
 
@@ -184,13 +186,15 @@ class CustomUpperControlNode(Node):
         if current_action == "PASSIVE_DEFAULT":
             start_index = 1
         elif current_action == "STAND_UP":
-            start_index = 2
-        elif current_action == "BIPED_CUSTOM_UPPER":
             start_index = 3
+        elif current_action == "BIPED_STAND_DEFAULT":
+            start_index = 3
+        elif current_action == "BIPED_WALK_RUN":
+            start_index = 4
         elif current_action in ["DAMPING_DEFAULT", "STORE_DEFAULT"]:
             start_index = 0
         else:
-            start_index = 3
+            start_index = 2
 
         for action_desc in sequence[start_index:]:
             wait_desc = "BIPED_WALK_RUN" if action_desc == "STAND_UP" else action_desc
