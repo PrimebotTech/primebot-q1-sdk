@@ -21,7 +21,7 @@ Example:
   python3 get_video_stream.py
   
   # Specify camera, IP, and output path
-  python3 get_video_stream.py --camera head_stereo_left --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
+  python3 get_video_stream.py --camera head_monocular_centra --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
 
 Parameters:
   - camera_id: Camera identifier (interactive prompt if not provided)
@@ -85,7 +85,7 @@ def parse_args() -> argparse.Namespace:
         "--camera",
         dest="camera_id",
         default=None,  
-        help="Camera identifier (e.g., head_monocular_centra, head_stereo_left).",
+        help="Camera identifier (e.g., head_monocular_centra).",
     )
     parser.add_argument(
         "--robot_ip",
@@ -110,11 +110,6 @@ def parse_args() -> argparse.Namespace:
         print("The list of Q series Camera IDs is as follows:")
         print("="*60)
         print("  head_monocular_centra  - 头部单目中央相机")
-        print("  head_stereo_left       - 头部双目左相机")
-        print("  head_stereo_right      - 头部双目右相机")
-        print("  head_fisheye_1         - 头部鱼眼相机 1")
-        print("  head_fisheye_2         - 头部鱼眼相机 2")
-        print("  head_TOF3D             - 头部 TOF 3D 相机")
         print("="*60)
         print("For camera_id corresponding to different robot configurations, please refer to the interface documentation.")
         print("")

@@ -20,7 +20,7 @@ Example:
   python3 get_jpg.py
   
   # Specify camera and output path
-  python3 get_jpg.py --ros-args -p camera_id:=head_stereo_left -p output_file:=/tmp/my_photo.jpg
+  python3 get_jpg.py --ros-args -p camera_id:=head_monocular_centra -p output_file:=/tmp/my_photo.jpg
 
 Parameters:
   - camera_id: Camera identifier (interactive prompt if not provided)
@@ -63,11 +63,6 @@ def get_camera_id_from_user() -> str:
     print("The list of Q series Camera IDs is as follows:")
     print("="*60)
     print("  head_monocular_centra  - 头部单目中央相机")
-    print("  head_stereo_left       - 头部双目左相机")
-    print("  head_stereo_right      - 头部双目右相机")
-    print("  head_fisheye_1         - 头部鱼眼相机 1")
-    print("  head_fisheye_2         - 头部鱼眼相机 2")
-    print("  head_TOF3D             - 头部 TOF 3D 相机")
     print("="*60)
     print("For camera_id corresponding to different robot configurations, please refer to the interface documentation.")
     print("")
