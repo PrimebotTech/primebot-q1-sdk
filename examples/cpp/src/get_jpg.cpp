@@ -18,7 +18,7 @@
    ros2 run aimdk_examples_cpp get_jpg --ros-args -p output_file:=/tmp/camera_capture.jpg
    
    # Specify camera and output path
-   ros2 run aimdk_examples_cpp get_jpg --ros-args -p camera_id:=head_stereo_left -p output_file:=/tmp/my_photo.jpg
+   ros2 run aimdk_examples_cpp get_jpg --ros-args -p camera_id:=head_monocular_centra -p output_file:=/tmp/my_photo.jpg
  
  Parameters:
    - camera_id: Camera identifier (interactive prompt if not provided)
@@ -63,11 +63,6 @@ std::string get_camera_id_from_user() {
   std::cout << "The list of Q series Camera IDs is as follows:" << std::endl;
   std::cout << std::string(60, '=') << std::endl;
   std::cout << "  head_monocular_centra  - Head monocular central camera" << std::endl;
-  std::cout << "  head_stereo_left       - Head stereo left camera" << std::endl;
-  std::cout << "  head_stereo_right      - Head stereo right camera" << std::endl;
-  std::cout << "  head_fisheye_1         - Head fisheye camera 1" << std::endl;
-  std::cout << "  head_fisheye_2         - Head fisheye camera 2" << std::endl;
-  std::cout << "  head_TOF3D             - Head TOF 3D camera" << std::endl;
   std::cout << std::string(60, '=') << std::endl;
   std::cout << "For camera_id corresponding to different robot configurations, please refer to the interface documentation." << std::endl;
   std::cout << std::endl;
