@@ -219,7 +219,7 @@ class DirectVelocityControl(Node):
         if desc == 'PASSIVE_DEFAULT':
             start_index = 1
         elif desc == 'STAND_UP':
-            start_index = 2
+            start_index = 3
         elif desc == 'BIPED_STAND_DEFAULT':
             start_index = 3
         elif desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:

@@ -390,7 +390,7 @@ public:
     if (info.action_desc == "PASSIVE_DEFAULT") {
         start_index = 1;
     } else if (info.action_desc == "STAND_UP") {
-        start_index = 2;
+        start_index = 3;
     } else if (info.action_desc == "BIPED_STAND_DEFAULT") {
         start_index = 3;
     } else if (info.action_desc == "DAMPING_DEFAULT" || info.action_desc == "STORE_DEFAULT") {
