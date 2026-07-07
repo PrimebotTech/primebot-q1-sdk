@@ -14,12 +14,21 @@ primebot_sdk/
 ├── 友好用户使用声明.md                  # 友好用户使用声明（必读）
 ├── aimdk_msgs/                        # 接口消息包 (ROS2 msg/srv 定义)
 │   ├── common/                        # 任务响应与基础类型定义
-│   ├── hal/                           # 硬件抽象层 (音频/灯带/触摸)
-│   ├── interaction/                   # 交互层 (表情播放/TTS)
-│   └── mc/                            # 运控层 (动作/轨迹控制/关节)
+│   ├── hal/                           # 硬件抽象层
+│   │   ├── audio/                     #   音频采集/播放
+│   │   ├── camera/                    #   相机图像/RTSP 流
+│   │   ├── msg/                       #   BMS / 触摸 / 关节 / 灯带等状态消息
+│   │   └── srv/                       #   灯带 / 颈部灯带 / 舵机 等服务
+│   ├── interaction/                   # 交互层
+│   │   ├── msg/                       #   TTS 请求/响应 / 优先级
+│   │   └── srv/                       #   表情播放 / TTS 语音播报
+│   └── mc/                            # 运控层
+│       ├── action/                    #   动作定义 / 动作状态 / 动作指令
+│       └── motion/                    #   运动速度 / 预设动作 / 自定义关节指令
 └── examples/                          # 场景化例程
-    ├── cpp/                           # C++ 示例
-    └── python/                        # Python 示例
+    ├── cpp/                           # C++ 示例 (含 CMakeLists.txt / package.xml)
+    ├── python/                        # Python 示例
+    └── ruckig_for_primebot/           # 关节轨迹规划库 (C++ & Python 绑定)
 ```
 
 ---
