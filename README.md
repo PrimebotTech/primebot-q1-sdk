@@ -26,9 +26,10 @@ primebot_sdk/
 │       ├── action/                    #   动作定义 / 动作状态 / 动作指令
 │       └── motion/                    #   运动速度 / 预设动作 / 自定义关节指令
 └── examples/                          # 场景化例程
-    ├── cpp/                           # C++ 示例 (含 CMakeLists.txt / package.xml)
+    ├── cpp/                           # C++ 示例（含 CMakeLists.txt / package.xml）
+    ├── opencv/                        # OpenCV 4.13.0 源码包（用户本机构建）
     ├── python/                        # Python 示例
-    └── ruckig_for_primebot/           # 关节轨迹规划库 (C++ & Python 绑定)
+    └── ruckig_for_primebot/           # Ruckig 源码包（供 C++/Python 示例构建）
 ```
 
 ---
