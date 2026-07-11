@@ -513,6 +513,27 @@ OCV_OPTION(INSTALL_ANDROID_EXAMPLES "Install Android examples"  OFF IF ANDROID )
 OCV_OPTION(INSTALL_TO_MANGLED_PATHS "Enables mangled install paths, that help with side by side installs." OFF IF (UNIX AND NOT ANDROID AND NOT APPLE_FRAMEWORK AND BUILD_SHARED_LIBS) )
 OCV_OPTION(INSTALL_TESTS            "Install accuracy and performance test binaries and test data" OFF)
 
+# PrimeBot SDK ships a deliberately minimal OpenCV tree for the RTSP example.
+# Keep these settings in the source tree so a normal `colcon build` (including
+# one with global `--cmake-args`) never enables components removed from this
+# SDK distribution.
+set(BUILD_LIST "core,imgproc,imgcodecs,videoio" CACHE STRING "" FORCE)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+set(BUILD_opencv_apps OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_PERF_TESTS OFF CACHE BOOL "" FORCE)
+set(INSTALL_TESTS OFF CACHE BOOL "" FORCE)
+set(WITH_FFMPEG ON CACHE BOOL "" FORCE)
+set(WITH_GSTREAMER ON CACHE BOOL "" FORCE)
+set(WITH_IPP OFF CACHE BOOL "" FORCE)
+set(WITH_ITT OFF CACHE BOOL "" FORCE)
+set(WITH_OPENCL OFF CACHE BOOL "" FORCE)
+set(WITH_VTK OFF CACHE BOOL "" FORCE)
+set(WITH_OPENEXR OFF CACHE BOOL "" FORCE)
+
+
 # OpenCV build options
 # ===================================================
 OCV_OPTION(ENABLE_CCACHE              "Use ccache"                                               (UNIX AND (CMAKE_GENERATOR MATCHES "Makefile" OR CMAKE_GENERATOR MATCHES "Ninja" OR CMAKE_GENERATOR MATCHES "Xcode")) )
@@ -1103,12 +1124,13 @@ add_subdirectory(doc)
 add_subdirectory(data)
 
 # extra applications
-if(BUILD_opencv_apps)
+if(BUILD_opencv_apps AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/apps/CMakeLists.txt")
   add_subdirectory(apps)
 endif()
 
 # examples
-if(BUILD_EXAMPLES OR BUILD_ANDROID_EXAMPLES OR INSTALL_ANDROID_EXAMPLES OR INSTALL_PYTHON_EXAMPLES OR INSTALL_C_EXAMPLES)
+if((BUILD_EXAMPLES OR BUILD_ANDROID_EXAMPLES OR INSTALL_ANDROID_EXAMPLES OR INSTALL_PYTHON_EXAMPLES OR INSTALL_C_EXAMPLES)
+   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/samples/CMakeLists.txt")
   add_subdirectory(samples)
 endif()
 
