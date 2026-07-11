@@ -235,8 +235,8 @@ ros2 service list
 | **公共 (必选)** | **ROSIDL** | 生成并编译自定义 `aimdk_msgs` (支持 C++/Python) | APT |
 | | **Colcon** | ROS 2 包的统一构建入口 (`colcon build`) | APT |
 | | **Python3-Dev** | 提供 C 扩展编译所需的 Python 开发头文件 | APT |
-| **C++ 专用** | **OpenCV** | 支撑 `/aima/hal/video/stream` 流接收及图像处理开发 | **SDK 内置 (预编译 4.13.0，位于 `examples/opencv/`，无需自行安装)** |
-| | **FFmpeg 运行库** | 内置 OpenCV 的 RTSP/视频解码后端依赖 `libavcodec` 等系统库，需在运行环境中提供 | APT |
+| **C++ 专用** | **OpenCV 4.13.0（SDK 源码包）** | 支撑 RTSP 流接收；由 colcon 编译 | SDK 源码 |
+| | **Ruckig for PrimeBot（SDK 源码包）** | 关节轨迹规划 | SDK 源码 |
 | | **YAML-CPP** | 用于解析机器人本地或自定义的 YAML 配置文件 (可选) | APT |
 | **Python 专用** | **NumPy** | 支撑 Python 图像处理及音频流的高效矩阵运算 | Pip |
 | | **OpenCV-Python** | 支撑 Python 视频流读取脚本 (`get_video_stream.py`) | Pip |
@@ -260,8 +260,15 @@ sudo apt update && sudo apt install -y \
 SDK 已内置预编译的 OpenCV 4.13.0（位于 `examples/opencv/`），**无需再安装 `libopencv-dev`**。但内置 OpenCV 的视频后端依赖系统的 FFmpeg 运行库（`libavcodec` 等），因此仍需安装 `ffmpeg`：
 ```bash
 sudo apt install -y \
-    ffmpeg \
-    libyaml-cpp-dev
+    git cmake build-essential pkg-config \
+    libavcodec-dev libavformat-dev libavutil-dev libswscale-dev \
+    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+    libyaml-cpp-dev ffmpeg
+```
+
+在 SDK 工作区根目录构建时，`aimdk_opencv` 会先从 `examples/opencv` 编译与 Python `opencv-python` 同主版本的 C++ OpenCV：
+```bash
+colcon build --packages-up-to aimdk_examples_cpp --symlink-install
 ```
 > **说明**：内置 OpenCV 版本（4.13.0）在 RTSP 流接收上比 Ubuntu 系统源自带的 4.5.x 更稳定，故 SDK 直接随包分发，`examples/cpp/CMakeLists.txt` 已通过 `set(OpenCV_DIR ...)` 指向该内置副本。
 
@@ -503,7 +510,7 @@ C++ 集成涉及 CMake 找包与链接的过程。本 SDK 基于 ROS 2 的 `amen
     >   target_link_libraries(${EXAMPLE_TARGET} ruckig_for_primebot::ruckig_for_primebot)
     > endif()
     > ```
-    > 若使用 OpenCV 或 ruckig，请确保文件顶部已有对应的 `find_package(OpenCV ...)` / `find_package(ruckig_for_primebot REQUIRED)`（SDK 默认已包含）。这两个库均由 SDK 以预编译形式内置（`examples/opencv/`、`examples/ruckig_for_primebot/`），`CMakeLists.txt` 顶部已通过 `set(OpenCV_DIR ...)` 与 `set(ruckig_for_primebot_DIR ...)` 指向内置副本，无需额外安装；编译产物会自动将对应 `.so` 拷贝到二进制同目录并写入 `$ORIGIN` RPATH，运行时无需设置 `LD_LIBRARY_PATH`。
+    > 若使用 OpenCV，`aimdk_opencv` 会作为 `aimdk_examples_cpp` 的依赖由 colcon 先行构建；SDK 的 CMake 会查找该源码包安装的 OpenCV 4.13.0，再按示例链接 `${OpenCV_LIBS}`。ruckig 仍使用 `find_package(ruckig_for_primebot REQUIRED)`。
 
 3. **编译工程**：在工作空间根目录下执行编译：
     ```bash

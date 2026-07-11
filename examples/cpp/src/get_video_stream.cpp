@@ -8,7 +8,7 @@
  Prerequisites:
    - Robot RTSP service must be running
    - Camera hardware must be operational
-   - OpenCV must be installed
+   - OpenCV 4.13.0 is provided by the SDK's aimdk_opencv source package
    - Network connection to robot must be available
  
  Usage:
