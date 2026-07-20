@@ -10,7 +10,8 @@ Description:
 Prerequisites:
   - MC must stay running. Do not disable the robot motion control module.
   - Robot must be in a safe environment for motion testing.
-  - State machine will auto-transition to BIPED_CUSTOM_UPPER before publishing commands.
+  - The shared action switcher will transition to BIPED_CUSTOM_UPPER before
+    publishing commands.
 
 Usage:
   python3 examples/python/upper_body_control.py
@@ -19,22 +20,18 @@ Usage:
 import math
 import signal
 import time
-from typing import Dict, Optional
+from typing import Dict
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
-from aimdk_msgs.srv import GetMcAction, SetMcAction
 from aimdk_msgs.msg import (
-    CommonRequest,
     JointCommand,
-    McAction,
-    McActionCommand,
-    McActionStatus,
     McCustomJointCommand,
-    RequestHeader,
 )
+
+from common.mc_action_switcher import McActionSwitchOptions, McActionSwitcher
 
 
 PUBLISH_RATE_HZ = 100.0
@@ -94,13 +91,6 @@ class CustomUpperControlNode(Node):
         self.command_pub = self.create_publisher(
             McCustomJointCommand, "/aima/mc/custom/joint/command", self.qos
         )
-        self.set_action_client = self.create_client(
-            SetMcAction, "/aimdk_5Fmsgs/srv/SetMcAction"
-        )
-        self.get_action_client = self.create_client(
-            GetMcAction, "/aimdk_5Fmsgs/srv/GetMcAction"
-        )
-
         self.current_demo_pose = self.default_stand_positions()
         self.sequence = 0
 
@@ -108,92 +98,23 @@ class CustomUpperControlNode(Node):
 
         self.get_logger().info(
             "custom_upper_control started. Make sure MC is running. The robot "
-            "will auto-transition to BIPED_CUSTOM_UPPER before publishing commands."
+            "will transition to BIPED_CUSTOM_UPPER before publishing commands."
         )
-
-    def get_action_desc(self) -> Optional[str]:
-        request = GetMcAction.Request()
-        request.request = CommonRequest()
-        request.request.header.stamp = self.get_clock().now().to_msg()
-
-        future = self.get_action_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
-        if not future.done() or future.result() is None:
-            return None
-
-        response = future.result()
-        if response.info.status.value != McActionStatus.RUNNING:
-            return None
-        return response.info.action_desc
-
-    def set_action(self, action_desc: str) -> bool:
-        request = SetMcAction.Request()
-        request.header = RequestHeader()
-        request.header.stamp = self.get_clock().now().to_msg()
-        request.source = "sdk_node"
-        request.command = McActionCommand()
-        request.command.action = McAction()
-        request.command.action_desc = action_desc
-
-        self.get_logger().info(f"Requesting state switch to: {action_desc}")
-        future = self.set_action_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
-        return future.done() and future.result() is not None
-
-    def wait_for_action(self, action_desc: str, timeout_sec: float = 20.0) -> bool:
-        deadline = time.monotonic() + timeout_sec
-        while rclpy.ok() and not g_stop and time.monotonic() < deadline:
-            if self.get_action_desc() == action_desc:
-                self.get_logger().info(f"Robot reached state: {action_desc}")
-                return True
-            time.sleep(0.5)
-
-        self.get_logger().error(f"Timeout waiting for state: {action_desc}")
-        return False
 
     def switch_to_custom_upper(self) -> bool:
-        if not self.set_action_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("SetMcAction service is not available.")
-            return False
-        if not self.get_action_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("GetMcAction service is not available.")
-            return False
-
-        current_action = self.get_action_desc()
-        if current_action == "BIPED_CUSTOM_UPPER":
-            return True
-
-        self.get_logger().info(
-            f"Current state is {current_action}. Switching to BIPED_CUSTOM_UPPER."
+        switcher = McActionSwitcher(self)
+        options = McActionSwitchOptions(
+            source="upper_body_control",
+            total_timeout=30.0,
         )
-
-        sequence = [
-            "PASSIVE_DEFAULT",
-            "STAND_UP",
-            "BIPED_WALK_RUN",
-            "BIPED_CUSTOM_UPPER",
-        ]
-
-        start_index = 0
-        if current_action == "PASSIVE_DEFAULT":
-            start_index = 1
-        elif current_action == "STAND_UP":
-            start_index = 2
-        elif current_action == "BIPED_WALK_RUN":
-            start_index = 3
-        elif current_action in ["DAMPING_DEFAULT", "STORE_DEFAULT"]:
-            start_index = 0
-        else:
-            start_index = 2
-
-        for action_desc in sequence[start_index:]:
-            wait_desc = "BIPED_WALK_RUN" if action_desc == "STAND_UP" else action_desc
-            if not self.set_action(action_desc) or not self.wait_for_action(wait_desc):
-                return False
-            if action_desc in ["STAND_UP"]:
-                time.sleep(2.0)
-
-        return True
+        result = switcher.switch_to("BIPED_CUSTOM_UPPER", options)
+        if not result.success:
+            current_action = result.current_action or "(unknown)"
+            self.get_logger().error(
+                "Failed to switch from "
+                f"{current_action} to BIPED_CUSTOM_UPPER: {result.message}"
+            )
+        return result.success
 
     def default_stand_positions(self) -> Dict[str, float]:
         return dict(zip(JOINT_NAMES, DEFAULT_STAND_POSITIONS))
@@ -284,8 +205,6 @@ class CustomUpperControlNode(Node):
     def run_demo(self) -> bool:
         stand_pose = self.default_stand_positions()
 
-        self.get_logger().info("Starting from default upper posture.")
-
         wave_start = self.wave_pose(stand_pose, 0.0)
         self.get_logger().info("Extending right arm smoothly.")
         if not self.publish_interpolation(stand_pose, wave_start, 2.0):
@@ -299,8 +218,7 @@ class CustomUpperControlNode(Node):
         if not self.publish_interpolation(self.current_demo_pose, stand_pose, 2.0):
             return False
 
-        self.get_logger().info("Holding default upper posture before exit.")
-        return self.publish_hold(stand_pose, 1.0)
+        return True
 
     def publish_default_for_shutdown(self) -> None:
         self.publish_hold(self.default_stand_positions(), 1.0)
@@ -322,7 +240,7 @@ def main() -> int:
             if not g_stop and not node.run_demo():
                 ret = 0 if g_stop else 1
 
-            if rclpy.ok() and not g_stop:
+            if rclpy.ok():
                 node.publish_default_for_shutdown()
     finally:
         node.destroy_node()

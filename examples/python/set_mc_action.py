@@ -10,23 +10,22 @@ Description:
 Prerequisites:
   - MC (Motion Control) service must be running
   - Robot must be in a safe environment for motion testing
-  - State machine auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+  - The shared action switcher plans supported state transitions
 
 Usage:
-  python3 set_mc_action.py --ros-args -p type:=<type> -p motion:=<motion_name> -p interrupt:=<bool>
+  python3 set_mc_action.py --ros-args -p type:=<type> -p motion:=<motion_name>
 
 Example:
   # Interactive action mode
   python3 set_mc_action.py --ros-args -p type:=action
   
   # Execute specific motion with auto-transition
-  python3 set_mc_action.py --ros-args -p type:=motion -p motion:=INTRO_POSE6 -p interrupt:=true
+  python3 set_mc_action.py --ros-args -p type:=motion -p motion:=INTRO_POSE6
 
 Parameters:
   - type: Control type, either 'action' or 'motion' (required)
   - action_desc: Action description string (used in action mode)
   - motion: Motion name to execute (required when type=motion)
-  - interrupt: Whether to interrupt current motion (default: true)
 """
 
 import time
@@ -35,8 +34,10 @@ import rclpy
 import rclpy.logging
 from rclpy.node import Node
 
-from aimdk_msgs.msg import CommonRequest, CommonState, McAction, McActionCommand, McActionStatus, RequestHeader
-from aimdk_msgs.srv import GetMcAction, SetMcAction, SetMcMotion
+from aimdk_msgs.msg import CommonRequest, CommonState, McActionStatus, RequestHeader
+from aimdk_msgs.srv import GetMcAction, SetMcMotion
+
+from common.mc_action_switcher import McActionSwitchOptions, McActionSwitcher
 
 SERVICE_CALL_TIMEOUT_SEC = 2.0
 MAX_RETRY_COUNT = 3
@@ -48,11 +49,7 @@ class SetMcActionClient(Node):
         self.type = self.declare_parameter('type', '').value
         self.action_desc = self.declare_parameter('action_desc', '').value
         self.motion = self.declare_parameter('motion', '').value
-        self.interrupt = self.declare_parameter('interrupt', True).value
 
-        self.set_action_client = self.create_client(
-            SetMcAction, '/aimdk_5Fmsgs/srv/SetMcAction'
-        )
         self.set_motion_client = self.create_client(
             SetMcMotion, '/aimdk_5Fmsgs/srv/SetMcMotion'
         )
@@ -62,7 +59,7 @@ class SetMcActionClient(Node):
         self.get_logger().info(
             'SetMcAction client node created with '
             f'type={self.type} action_desc={self.action_desc} '
-            f'motion={self.motion} interrupt={self.interrupt}'
+            f'motion={self.motion}'
         )
 
     def call_service_with_retry(self, client, request, service_name: str, timeout_sec=None, max_retries=None):
@@ -113,64 +110,39 @@ class SetMcActionClient(Node):
                     self.get_logger().error("No target action specified")
                     return False
 
-                # Execute SetMcAction
-                if self.set_action(target_action):
-                    # Poll for success within 20 seconds
-                    if self.wait_for_action(target_action, timeout_sec=20.0):
-                        print("\nSwitch succeeded!")
-                    else:
-                        print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
+                switcher = McActionSwitcher(self)
+                options = McActionSwitchOptions(
+                    source="set_mc_action",
+                    total_timeout=20.0,
+                )
+                result = switcher.switch_to(target_action, options)
+                if result.success:
+                    print("\nSwitch succeeded!")
                 else:
                     print("Switch failed, please confirm if the expected Action complies with the state machine transition logic")
-                
-                return True
+                    self.get_logger().error(
+                        f"Action switch failed: {result.message}"
+                    )
+                return result.success
             except KeyboardInterrupt:
                 return True
         else:
-            # Optimized logic for 'motion' type: Ensure robot is in BIPED_WALK_RUN
-            current_id, current_desc, current_status = self.get_action_status()
-            
-            if current_desc == 'BIPED_WALK_RUN' and current_status == McActionStatus.RUNNING:
-                self.get_logger().info('Robot already in BIPED_WALK_RUN. Proceeding to motion...')
-            else:
-                self.get_logger().info(f'Current state is {current_desc}. Starting state machine transition sequence...')
-                sequence = [
-                    'PASSIVE_DEFAULT',
-                    'STAND_UP',
-                    'BIPED_STAND_DEFAULT',
-                    'BIPED_WALK_RUN'
-                ]
-                
-                # Determine starting point in the sequence to skip redundant steps
-                start_index = 0
-                if current_desc == 'PASSIVE_DEFAULT':
-                    start_index = 1
-                elif current_desc == 'STAND_UP':
-                    start_index = 3
-                elif current_desc == 'BIPED_STAND_DEFAULT':
-                    start_index = 3
-                elif current_desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
-                    start_index = 0
-                else:
-                    # For any other unknown state, safer to start from STAND_UP
-                    start_index = 2
-                # Execute the required sequence of states
-                for i in range(start_index, len(sequence)):
-                    target = sequence[i]
-                    # When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
-                    waitstatus = 'BIPED_WALK_RUN' if target == 'STAND_UP' else target
-                    
-                    self.get_logger().info(f'Pre-requisite: Switching to {target}...')
-                    if not self.set_action(target) or not self.wait_for_action(waitstatus, timeout_sec=20.0):
-                        return False
-                    
-                    # 切换到双足站立或走跑模式后等待一会，让机器人稳定
-                    if target == 'STAND_UP' or target == 'BIPED_WALK_RUN':
-                        self.get_logger().info('Waiting for robot to stabilize after standing up...')
-                        time.sleep(2)
+            switcher = McActionSwitcher(self)
+            options = McActionSwitchOptions(
+                source="set_mc_action",
+                total_timeout=30.0,
+            )
+            result = switcher.switch_to("BIPED_WALK_RUN", options)
+            if not result.success:
+                current_action = result.current_action or "(unknown)"
+                self.get_logger().error(
+                    "Failed to switch from "
+                    f"{current_action} to BIPED_WALK_RUN: {result.message}"
+                )
+                return False
 
             # Execute final target motion
-            if not self.set_motion(self.motion, self.interrupt):
+            if not self.set_motion(self.motion):
                 return False
             return self.wait_for_motion()
 
@@ -208,67 +180,10 @@ class SetMcActionClient(Node):
         # GetMcAction is required for both types to query the current state
         self.wait_for_service(self.get_client, '/aimdk_5Fmsgs/srv/GetMcAction')
 
-        if self.type == 'action':
-            self.wait_for_service(self.set_action_client, '/aimdk_5Fmsgs/srv/SetMcAction')
-        elif self.type == 'motion':
+        if self.type == 'motion':
             self.wait_for_service(self.set_motion_client, '/aimdk_5Fmsgs/srv/SetMcMotion')
 
-    def set_action(self, action_desc: str) -> bool:
-        try:
-            request = SetMcAction.Request()
-            request.header = RequestHeader()
-            request.source = "node"  # 触发源标识
-
-            command = McActionCommand()
-            command.action = McAction()
-            command.action.value = 0
-            command.action_desc = action_desc
-            request.command = command
-
-            self.get_logger().info(f'Sending request: action_desc={action_desc}')
-            request.header.stamp = self.get_clock().now().to_msg()
-            
-            future = self.call_service_with_retry(
-                self.set_action_client, request, "SetMcAction"
-            )
-            if future is None:
-                current_action_id, current_action_desc, current_status = self.get_action_status()
-                if current_action_desc == action_desc:
-                    self.get_logger().warning(
-                        'SetMcAction request timed out, but target action is '
-                        f'already active: action_desc={current_action_desc} '
-                        f'status={current_status}'
-                    )
-                    return True
-                return False
-
-            response = future.result()
-            if response is None:
-                current_action_id, current_action_desc, current_status = self.get_action_status()
-                if current_action_desc == action_desc:
-                    self.get_logger().warning(
-                        'SetMcAction request timed out, but target action is '
-                        f'already active: action_desc={current_action_desc} '
-                        f'status={current_status}'
-                    )
-                    return True
-                return False
-
-            if response.response.status.value == CommonState.SUCCESS:
-                self.get_logger().info('SetMcAction request accepted by service.')
-                return True
-
-            self.get_logger().error(
-                f'SetMcAction failed. '
-                f'code={response.response.header.code} status={response.response.status.value} '
-                f'msg={response.response.message}'
-            )
-            return False
-        except Exception as e:
-            self.get_logger().error(f'Exception occurred: {e}')
-            return False
-
-    def set_motion(self, motion_name: str, interrupt: bool) -> bool:
+    def set_motion(self, motion_name: str) -> bool:
         try:
             max_attempts = 5
             request_timeout_sec = 1.0
@@ -279,12 +194,12 @@ class SetMcActionClient(Node):
                 request.header.stamp = self.get_clock().now().to_msg()
                 request.motion = motion_name
                 request.type = SetMcMotion.Request.MIMIC_QY
-                request.interrupt = interrupt
+                request.interrupt = False
 
                 self.get_logger().info(
                     'Sending SetMcMotion request '
                     f'({attempt}/{max_attempts}): motion={motion_name} '
-                    f'interrupt={interrupt}'
+                    'interrupt=False'
                 )
 
                 future = self.set_motion_client.call_async(request)
@@ -334,43 +249,6 @@ class SetMcActionClient(Node):
         except Exception as e:
             self.get_logger().error(f'Exception occurred: {e}')
             return False
-
-    def wait_for_action(
-        self,
-        expected_action_desc: str,
-        timeout_sec: float = 20.0,
-        poll_interval_sec: float = 0.2,
-    ) -> bool:
-        deadline = time.monotonic() + timeout_sec
-
-        self.get_logger().info(
-            'Waiting for target action_desc='
-            f'{expected_action_desc} to reach RUNNING state...'
-        )
-
-        while rclpy.ok() and time.monotonic() < deadline:
-            action_id, action_desc, status = self.get_action_status()
-            if action_desc is None or status is None:
-                time.sleep(poll_interval_sec)
-                continue
-
-            if (
-                action_desc == expected_action_desc
-                and status == McActionStatus.RUNNING
-            ):
-                self.get_logger().info(
-                    'Target action reached and is running: '
-                    f'action_desc={expected_action_desc}'
-                )
-                return True
-
-            time.sleep(poll_interval_sec)
-
-        self.get_logger().error(
-            'Timed out waiting for target action_desc='
-            f'{expected_action_desc} to reach RUNNING state.'
-        )
-        return False
 
     def wait_for_motion(
         self,
