@@ -8,30 +8,29 @@
  Prerequisites:
    - MC (Motion Control) service must be running
    - Robot must be in a safe environment for motion testing
-   - State machine auto-transition: PASSIVE_DEFAULT -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
+   - McActionSwitcher plans supported state transitions
  
  Usage:
-   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=<type> -p motion:=<motion_name> -p interrupt:=<bool>
+   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=<type> -p motion:=<motion_name>
  
  Example:
    # Interactive action mode
    ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=action
    
    # Execute specific motion with auto-transition
-   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p motion:=INTRO_POSE6 -p interrupt:=true
+   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p motion:=INTRO_POSE6
  
  Parameters:
    - type: Control type, either 'action' or 'motion' (required)
    - action_desc: Action description string (used in action mode)
    - motion: Motion name to execute (required when type=motion)
-   - interrupt: Whether to interrupt current motion (default: true)
  */
 #include "aimdk_msgs/msg/common_request.hpp"
 #include "aimdk_msgs/msg/common_state.hpp"
 #include "aimdk_msgs/msg/mc_action_status.hpp"
 #include "aimdk_msgs/srv/get_mc_action.hpp"
-#include "aimdk_msgs/srv/set_mc_action.hpp"
 #include "aimdk_msgs/srv/set_mc_motion.hpp"
+#include "mc_action_switcher.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include <chrono>
@@ -40,7 +39,6 @@
 #include <signal.h>
 #include <string>
 #include <thread>
-#include <unordered_map>
 
 constexpr double kServiceCallTimeoutSec = 2.0;
 constexpr int kMaxRetryCount = 3;
@@ -63,19 +61,15 @@ public:
     type_ = this->declare_parameter<std::string>("type", "");
     action_desc_ = this->declare_parameter<std::string>("action_desc", "");
     motion_ = this->declare_parameter<std::string>("motion", "");
-    interrupt_ = this->declare_parameter<bool>("interrupt", true);
 
-    set_action_client_ = this->create_client<aimdk_msgs::srv::SetMcAction>(
-        "/aimdk_5Fmsgs/srv/SetMcAction");
     set_motion_client_ = this->create_client<aimdk_msgs::srv::SetMcMotion>(
         "/aimdk_5Fmsgs/srv/SetMcMotion");
     get_client_ = this->create_client<aimdk_msgs::srv::GetMcAction>(
         "/aimdk_5Fmsgs/srv/GetMcAction");
     RCLCPP_INFO(this->get_logger(),
                 "SetMcAction client node created with type=%s action_desc=%s "
-                "motion=%s interrupt=%s",
-                type_.c_str(), action_desc_.c_str(), motion_.c_str(),
-                interrupt_ ? "true" : "false");
+                "motion=%s",
+                type_.c_str(), action_desc_.c_str(), motion_.c_str());
   }
 
   bool execute() {
@@ -113,85 +107,50 @@ public:
         target_action = action_desc_;
       }
 
-      // Execute SetMcAction
-      if (set_action(target_action)) {
-        // Poll for success within 20 seconds
-        if (wait_for_action(target_action, std::chrono::seconds(20))) {
-          std::cout << "\nSwitch succeeded!" << std::endl;
-        } else {
-          std::cout << "Switch failed, please confirm if the expected Action "
-                       "complies with the state machine transition logic"
-                    << std::endl;
-        }
+      aimdk_examples::McActionSwitcher switcher(this->shared_from_this());
+      aimdk_examples::McActionSwitchOptions options;
+      options.source = "set_mc_action";
+      options.total_timeout = std::chrono::seconds(20);
+
+      const auto result = switcher.switch_to(target_action, options);
+      if (result.success) {
+        std::cout << "\nSwitch succeeded!" << std::endl;
       } else {
         std::cout << "Switch failed, please confirm if the expected Action "
                      "complies with the state machine transition logic"
                   << std::endl;
+        RCLCPP_ERROR(this->get_logger(), "Action switch failed: %s",
+                     result.message.c_str());
       }
 
-      return true;
-    } else {
+      return result.success;
+    } else if (type_ == "motion") {
       // Optimized logic for 'motion' type: Ensure robot is in BIPED_WALK_RUN
-      ActionInfo current;
-      if (!get_action_status(current)) {
+      aimdk_examples::McActionSwitcher switcher(this->shared_from_this());
+      aimdk_examples::McActionSwitchOptions options;
+      options.source = "set_mc_action";
+      options.total_timeout = std::chrono::seconds(30);
+
+      const auto result = switcher.switch_to("BIPED_WALK_RUN", options);
+      if (!result.success) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Failed to switch from %s to BIPED_WALK_RUN: %s",
+                     result.current_action.empty() ? "(unknown)"
+                                                   : result.current_action.c_str(),
+                     result.message.c_str());
         return false;
       }
 
-      if (current.action_desc == "BIPED_WALK_RUN" &&
-          current.status == aimdk_msgs::msg::McActionStatus::RUNNING) {
-        RCLCPP_INFO(this->get_logger(),
-                    "Robot already in BIPED_WALK_RUN. Proceeding to motion...");
-      } else {
-        RCLCPP_INFO(this->get_logger(),
-                    "Current state is %s. Starting state machine transition "
-                    "sequence...",
-                    current.action_desc.c_str());
-        std::vector<std::string> sequence = {
-            "PASSIVE_DEFAULT", "STAND_UP", "BIPED_STAND_DEFAULT", "BIPED_WALK_RUN"};
-
-        // Determine starting point in the sequence to skip redundant steps
-        size_t start_index = 0;
-        if (current.action_desc == "PASSIVE_DEFAULT") {
-          start_index = 1;
-        } else if (current.action_desc == "STAND_UP") {
-          start_index = 3;
-        } else if (current.action_desc == "BIPED_STAND_DEFAULT") {
-          start_index = 3;
-        } else if (current.action_desc == "BIPED_WALK_RUN") {
-          start_index = 4;
-        } else if (current.action_desc == "DAMPING_DEFAULT" || current.action_desc == "STORE_DEFAULT") {
-          start_index = 0;
-        } else {
-          // For any other unknown state, safer to start from STAND_UP
-          start_index = 2;
-        }
-
-        // Execute the required sequence of states
-        for (size_t i = start_index; i < sequence.size(); ++i) {
-          const std::string &target_state = sequence[i];
-          // When transitioning to STAND_UP, wait for BIPED_WALK_RUN instead
-          const std::string &wait_state = (target_state == "STAND_UP") ? "BIPED_WALK_RUN" : target_state;
-          
-          RCLCPP_INFO(this->get_logger(), "Pre-requisite: Switching to %s...",
-                      target_state.c_str());
-          if (!set_action(target_state) || !wait_for_action(wait_state, std::chrono::seconds(20))) {
-            return false;
-          }
-          
-          // 切换到双足站立或走跑模式后等待一会，让机器人稳定
-          if (target_state == "STAND_UP" || target_state == "BIPED_WALK_RUN") {
-            RCLCPP_INFO(this->get_logger(), "Waiting for robot to stabilize after standing up...");
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-          }
-        }
-      }
-
       // Execute final target motion
-      if (!set_motion(motion_, interrupt_)) {
+      if (!set_motion(motion_)) {
         return false;
       }
       return wait_for_motion();
     }
+
+    RCLCPP_ERROR(this->get_logger(), "Unsupported control type: %s",
+                 type_.c_str());
+    return false;
   }
 
 private:
@@ -262,54 +221,7 @@ private:
     return typename rclcpp::Client<ServiceT>::SharedFuture();
   }
 
-  bool set_action(const std::string &action_desc) {
-    try {
-      auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
-      request->header.stamp = this->now();
-      request->source = "node";  // 触发源标识
-      request->command.action.value = 0;
-      request->command.action_desc = action_desc;
-
-      RCLCPP_INFO(this->get_logger(), "Sending request: action_desc=%s",
-                  action_desc.c_str());
-
-      auto future = call_service_with_retry<aimdk_msgs::srv::SetMcAction>(
-          set_action_client_, request, "SetMcAction");
-
-      if (!future.valid()) {
-        ActionInfo info;
-        if (get_action_status(info) && info.action_desc == action_desc) {
-          RCLCPP_WARN(this->get_logger(),
-                      "SetMcAction request timed out, but target action is "
-                      "already active: action_desc=%s status=%d",
-                      info.action_desc.c_str(), info.status);
-          return true;
-        }
-
-        return false;
-      }
-
-      auto response = future.get();
-      if (response->response.status.value ==
-          aimdk_msgs::msg::CommonState::SUCCESS) {
-        RCLCPP_INFO(this->get_logger(),
-                    "SetMcAction request accepted by service.");
-        return true;
-      }
-
-      RCLCPP_ERROR(this->get_logger(),
-                   "SetMcAction failed. code=%ld status=%d msg=%s",
-                   response->response.header.code,
-                   response->response.status.value,
-                   response->response.message.c_str());
-      return false;
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->get_logger(), "Exception occurred: %s", e.what());
-      return false;
-    }
-  }
-
-  bool set_motion(const std::string &motion_name, bool interrupt) {
+  bool set_motion(const std::string &motion_name) {
     try {
       constexpr int kMaxAttempts = 5;
       const auto request_timeout = std::chrono::seconds(1);
@@ -320,13 +232,12 @@ private:
         request->header.stamp = this->now();
         request->motion = motion_name;
         request->type = aimdk_msgs::srv::SetMcMotion::Request::MIMIC_QY;
-        request->interrupt = interrupt;
+        request->interrupt = false;
 
         RCLCPP_INFO(this->get_logger(),
                     "Sending SetMcMotion request (%d/%d): motion=%s "
-                    "interrupt=%s",
-                    attempt, kMaxAttempts, motion_name.c_str(),
-                    interrupt ? "true" : "false");
+                    "interrupt=false",
+                    attempt, kMaxAttempts, motion_name.c_str());
 
         auto future = set_motion_client_->async_send_request(request);
         auto retcode = rclcpp::spin_until_future_complete(
@@ -366,41 +277,6 @@ private:
       RCLCPP_ERROR(this->get_logger(), "Exception occurred: %s", e.what());
       return false;
     }
-  }
-
-  bool wait_for_action(
-      const std::string &expected_action_desc,
-      std::chrono::seconds timeout = std::chrono::seconds(20),
-      std::chrono::milliseconds poll_interval = std::chrono::milliseconds(200)) {
-    auto deadline = std::chrono::steady_clock::now() + timeout;
-
-    RCLCPP_INFO(this->get_logger(),
-                "Waiting for target action_desc=%s to reach RUNNING state...",
-                expected_action_desc.c_str());
-
-    while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
-      ActionInfo info;
-      if (!get_action_status(info)) {
-        std::this_thread::sleep_for(poll_interval);
-        continue;
-      }
-
-      if (info.status == aimdk_msgs::msg::McActionStatus::RUNNING &&
-          info.action_desc == expected_action_desc) {
-        RCLCPP_INFO(this->get_logger(),
-                    "Target action reached and is running: action_desc=%s",
-                    expected_action_desc.c_str());
-        return true;
-      }
-
-      std::this_thread::sleep_for(poll_interval);
-    }
-
-    RCLCPP_ERROR(this->get_logger(),
-                 "Timed out waiting for target action_desc=%s to reach "
-                 "RUNNING state.",
-                 expected_action_desc.c_str());
-    return false;
   }
 
   bool wait_for_motion(
@@ -482,9 +358,7 @@ private:
     // GetMcAction is required for both types to query the current state
     wait_for_service(get_client_, "/aimdk_5Fmsgs/srv/GetMcAction");
 
-    if (type_ == "action") {
-      wait_for_service(set_action_client_, "/aimdk_5Fmsgs/srv/SetMcAction");
-    } else if (type_ == "motion") {
+    if (type_ == "motion") {
       wait_for_service(set_motion_client_, "/aimdk_5Fmsgs/srv/SetMcMotion");
     }
   }
@@ -492,9 +366,7 @@ private:
   std::string type_;
   std::string action_desc_;
   std::string motion_;
-  bool interrupt_ = true;
 
-  rclcpp::Client<aimdk_msgs::srv::SetMcAction>::SharedPtr set_action_client_;
   rclcpp::Client<aimdk_msgs::srv::SetMcMotion>::SharedPtr set_motion_client_;
   rclcpp::Client<aimdk_msgs::srv::GetMcAction>::SharedPtr get_client_;
 };

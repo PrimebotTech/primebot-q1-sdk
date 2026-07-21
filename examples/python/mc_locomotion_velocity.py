@@ -3,16 +3,16 @@
 """
 Example client for /aima/mc/locomotion/velocity.
 
-This script automatically handles the required state machine transitions for safety.
-Locomotion control (walking/running) requires the robot to be in BIPED_WALK_RUN mode.
+This script automatically handles the required state machine transitions for
+safety. Locomotion control (walking/running) requires the robot to be in
+BIPED_WALK_RUN mode.
 
 Prerequisites auto-handled by this script:
-  The script ensures a safe sequential transition path:
-  PASSIVE_DEFAULT -> STAND_UP -> BIPED_STAND_DEFAULT -> BIPED_WALK_RUN
-  Depending on the initial state, it enters the sequence at the appropriate step.
+  The shared MC action switcher plans a supported route from the current state
+  to BIPED_WALK_RUN and waits for every intermediate action.
 
 Flow:
-  1. Detect current state and transition to BIPED_WALK_RUN sequentially.
+  1. Detect current state and transition to BIPED_WALK_RUN.
   2. Register this node as an authorized input source (priority 80).
   3. Prompt the user for target velocities.
   4. Publish velocity commands for 5 seconds.
@@ -29,10 +29,11 @@ import rclpy
 from rclpy.node import Node
 
 from aimdk_msgs.msg import (
-    CommonRequest, CommonState, McAction, McActionCommand, 
-    McActionStatus, McLocomotionVelocity, MessageHeader, RequestHeader
+    CommonRequest, McLocomotionVelocity, MessageHeader
 )
-from aimdk_msgs.srv import GetCurrentInputSource, SetMcInputSource, GetMcAction, SetMcAction
+from aimdk_msgs.srv import GetCurrentInputSource, SetMcInputSource
+
+from common.mc_action_switcher import McActionSwitchOptions, McActionSwitcher
 
 SERVICE_CALL_TIMEOUT_SEC = 3.0
 MAX_RETRY_COUNT = 3
@@ -51,13 +52,6 @@ class DirectVelocityControl(Node):
         self.get_client = self.create_client(
             GetCurrentInputSource, "/aimdk_5Fmsgs/srv/GetCurrentInputSource"
         )
-        self.set_action_client = self.create_client(
-            SetMcAction, "/aimdk_5Fmsgs/srv/SetMcAction"
-        )
-        self.get_action_client = self.create_client(
-            GetMcAction, "/aimdk_5Fmsgs/srv/GetMcAction"
-        )
-
         self.forward_velocity = 0.0
         self.lateral_velocity = 0.0
         self.angular_velocity = 0.0
@@ -82,8 +76,6 @@ class DirectVelocityControl(Node):
             (self.publisher, "/aima/mc/locomotion/velocity"),
             (self.set_client, "/aimdk_5Fmsgs/srv/SetMcInputSource"),
             (self.get_client, "/aimdk_5Fmsgs/srv/GetCurrentInputSource"),
-            (self.set_action_client, "/aimdk_5Fmsgs/srv/SetMcAction"),
-            (self.get_action_client, "/aimdk_5Fmsgs/srv/GetMcAction")
         ]
         for client, name in clients:
             if hasattr(client, 'wait_for_service'):
@@ -110,135 +102,20 @@ class DirectVelocityControl(Node):
         self.get_logger().error(f'{service_name} failed after {max_retries} attempts')
         return None
 
-    def get_action_status(self):
-        try:
-            request = GetMcAction.Request()
-            request.request = CommonRequest()
-            request.request.header.stamp = self.get_clock().now().to_msg()
-            
-            future = self.call_service_with_retry(
-                self.get_action_client, request, "GetMcAction"
-            )
-            if future is None:
-                return None, None, None
-                
-            res = future.result()
-            if res is None:
-                return None, None, None
-                
-            return res.info.current_action.value, res.info.action_desc, res.info.status.value
-        except Exception as e:
-            self.get_logger().error(f"Error getting action status: {e}")
-            return None, None, None
-
-    def set_action(self, action_desc: str) -> bool:
-        try:
-            request = SetMcAction.Request()
-            request.header = RequestHeader()
-            request.header.stamp = self.get_clock().now().to_msg()
-            request.source = "node"  # 触发源标识
-            request.command = McActionCommand()
-            request.command.action = McAction()
-            request.command.action_desc = action_desc
-            
-            self.get_logger().info(f"Requesting state switch to: {action_desc}")
-            
-            future = self.call_service_with_retry(
-                self.set_action_client, request, "SetMcAction"
-            )
-            if future is None:
-                return False
-                
-            res = future.result()
-            if res is not None and res.response.status.value == CommonState.SUCCESS:
-                return True
-            
-            if res is not None:
-                self.get_logger().error(
-                    f"SetMcAction failed. "
-                    f"code={res.response.header.code} status={res.response.status.value} "
-                    f"msg={res.response.message}"
-                )
-            
-            return False
-        except Exception as e:
-            self.get_logger().error(f"Error calling SetMcAction: {e}")
-            return False
-
-    def wait_for_action(self, target_desc: str, timeout_sec: float = 20.0) -> bool:
-        deadline = time.monotonic() + timeout_sec
-        while time.monotonic() < deadline:
-            _, desc, status = self.get_action_status()
-            # Locomotion modes (walk/run) report status=2 (TRANSITION) instead of
-            # RUNNING (100), so accept any non-IDLE status when action_desc matches.
-            if desc == target_desc and status != McActionStatus.IDLE:
-                self.get_logger().info(f"Robot successfully reached state: {target_desc} (status={status})")
-                return True
-            time.sleep(0.5)
-        self.get_logger().error(f"Timeout waiting for state: {target_desc}")
-        return False
-
     def ensure_ready_state(self) -> bool:
-        _, desc, status = self.get_action_status()
-        
-        # Safety margin: If initial state is None, poll for up to 5s to recover communication
-        if desc is None:
-            self.get_logger().warning("Initial action status is None. Retrying for up to 5 seconds...")
-            deadline = time.monotonic() + 5.0
-            while time.monotonic() < deadline:
-                time.sleep(0.5)
-                _, desc, status = self.get_action_status()
-                if desc is not None:
-                    self.get_logger().info(f"Successfully recovered action status: {desc}")
-                    break
-            
-            if desc is None:
-                self.get_logger().error("Action status remained None after 5 seconds of polling.")
-
-        # 如果已经是走跑模式，直接返回
-        if desc == 'BIPED_WALK_RUN':
-            self.get_logger().info('Already in BIPED_WALK_RUN mode.')
-            return True
-
-        self.get_logger().info(f"Current state is {desc}. Starting state machine transition sequence...")
-        
-        # Define the target sequence of states for walking
-        sequence = [
-            'PASSIVE_DEFAULT',
-            'STAND_UP',
-            'BIPED_STAND_DEFAULT',
-            'BIPED_WALK_RUN'
-        ]
-        
-        # Determine starting point in the sequence
-        start_index = 0
-        if desc == 'PASSIVE_DEFAULT':
-            start_index = 1
-        elif desc == 'STAND_UP':
-            start_index = 3
-        elif desc == 'BIPED_STAND_DEFAULT':
-            start_index = 3
-        elif desc in ['DAMPING_DEFAULT', 'STORE_DEFAULT']:
-            start_index = 0
-        else:
-            # If in other states, start from STAND_UP
-            start_index = 2
-            
-        # Execute the sequence from the determined start point
-        for i in range(start_index, len(sequence)):
-            target = sequence[i]
-            waitstatus=target
-            if target=='STAND_UP':
-                waitstatus='BIPED_WALK_RUN'
-            if not self.set_action(target) or not self.wait_for_action(waitstatus):
-                return False
-            
-            # 切换到双足站立后等待一会，让机器人稳定
-            if target == 'STAND_UP' or target == 'BIPED_WALK_RUN':
-                self.get_logger().info('Waiting for robot to stabilize after standing up...')
-                time.sleep(2)
-                
-        return True
+        switcher = McActionSwitcher(self)
+        options = McActionSwitchOptions(
+            source="locomotion_velocity_node",
+            total_timeout=30.0,
+        )
+        result = switcher.switch_to("BIPED_WALK_RUN", options)
+        if not result.success:
+            current_action = result.current_action or "(unknown)"
+            self.get_logger().error(
+                "Failed to switch from "
+                f"{current_action} to BIPED_WALK_RUN: {result.message}"
+            )
+        return result.success
 
     def start_publish(self):
         if self.timer is None:
