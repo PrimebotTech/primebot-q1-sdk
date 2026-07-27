@@ -408,7 +408,8 @@ class McActionSwitcher:
             return False
         return (
             response is not None
-            and response.response.status.value == CommonState.SUCCESS
+            and response.response.header.code == 0
+            and response.response.state.value == CommonState.SUCCESS
         )
 
     def _wait_for_action(

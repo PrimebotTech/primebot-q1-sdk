@@ -105,6 +105,7 @@ public:
       auto request =
           std::make_shared<aimdk_msgs::srv::SetMcPresetMotion::Request>();
       request->header.stamp = this->now();
+      request->source = "preset_motion";
       request->motion.value = motion_id;
       request->interrupt = true;
 

@@ -230,6 +230,7 @@ private:
         auto request =
             std::make_shared<aimdk_msgs::srv::SetMcMotion::Request>();
         request->header.stamp = this->now();
+        request->source = "set_mc_action";
         request->motion = motion_name;
         request->type = aimdk_msgs::srv::SetMcMotion::Request::MIMIC_QY;
         request->interrupt = false;

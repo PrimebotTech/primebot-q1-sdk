@@ -192,6 +192,7 @@ class SetMcActionClient(Node):
                 request = SetMcMotion.Request()
                 request.header = RequestHeader()
                 request.header.stamp = self.get_clock().now().to_msg()
+                request.source = 'set_mc_action'
                 request.motion = motion_name
                 request.type = SetMcMotion.Request.MIMIC_QY
                 request.interrupt = False
