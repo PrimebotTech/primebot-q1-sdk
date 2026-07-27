@@ -407,7 +407,8 @@ class McActionSwitcher
     }
     const auto response = future.get();
     return response &&
-           response->response.status.value == aimdk_msgs::msg::CommonState::SUCCESS;
+           response->response.header.code == 0 &&
+           response->response.state.value == aimdk_msgs::msg::CommonState::SUCCESS;
   }
 
   bool wait_for_action(const std::string & expected_action,
