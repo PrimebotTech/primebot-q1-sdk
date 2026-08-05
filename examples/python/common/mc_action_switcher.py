@@ -293,6 +293,12 @@ class McActionSwitcher:
                     arrival = self._AUTOMATIC_NEXT_ACTIONS[candidate]
                     transition = _PlannedTransition(candidate, arrival)
                 elif (
+                    current == "DAMPING_DEFAULT"
+                    and candidate == "PASSIVE_DEFAULT"
+                ):
+                    transition = _PlannedTransition(candidate, candidate)
+                    arrival = candidate
+                elif (
                     self._is_bridge_action(candidate)
                     or candidate not in self._SKIP_ACTIONS
                 ):

@@ -304,6 +304,10 @@ class McActionSwitcher
           if (automatic_it != automatic_next_actions().end()) {
             transition = {candidate, automatic_it->second};
             arrival = automatic_it->second;
+          } else if (from == "DAMPING_DEFAULT" &&
+                     candidate == "PASSIVE_DEFAULT") {
+            transition = {candidate, candidate};
+            arrival = candidate;
           } else if (is_bridge_action(candidate) ||
                      skip_actions().count(candidate) == 0U) {
             transition = {candidate, candidate};
