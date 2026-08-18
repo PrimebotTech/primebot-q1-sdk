@@ -25,7 +25,6 @@
     - [4.1 准备启动脚本](#41-准备启动脚本)
     - [4.2 修改配置文件](#42-修改配置文件)
     - [4.3 验证](#43-验证)
-    - [4.4 注意事项](#44-注意事项)
 - [5. 开发者模式说明](#5-开发者模式说明)
 - [6. 常见问题](#6-常见问题)
     - [6.1 节点发现异常排查](#61-节点发现异常排查)
@@ -671,7 +670,7 @@ my_project/
 
 ### 4.1 准备启动脚本
 
-将模块部署到板载路径，推荐放在 `/robot/software/<your_module>/` 下。
+将模块部署到板载路径，必须放在 `/robot/software/<your_module>/` 下。
 
 启动脚本示例：
 
@@ -695,7 +694,7 @@ while true; do
 done
 ```
 
-确保 `start_my_module` 文件有执行权限：
+> 确保 `start_my_module` 文件有执行权限：
 
 ```bash
 chmod +x /robot/software/my_module/bin/start_my_module
@@ -703,14 +702,14 @@ chmod +x /robot/software/my_module/bin/start_my_module
 
 ### 4.2 修改配置文件
 
-SSH 登录机器人后，编辑 `q1_xxxx_socx_config.yaml` 类型的配置文件：
+SSH 登录机器人相应板子，修改 `/robot/software/process_manager/bin/cfg/` 路径下相应的 `qx_xxxx_socx_config.yaml` 类型的配置文件：
 
 ```bash
 # 例如：
 sudo vi /robot/software/process_manager/bin/cfg/q1_v2d_soc0_config.yaml
 ```
 
-> 建议先备份
+> 建议先备份机器原始配置文件
 
 #### 4.2.1 在 `apps` 段添加模块
 
@@ -770,36 +769,36 @@ process_manager:
 
 #### 4.3.1 手动测试
 
-先手动运行启动脚本，确认无报错：
+在相应板子上手动启动脚本，确认无报错：
 
 ```bash
 /robot/software/my_module/bin/start_my_module
 ```
 
-> 如果未设置 `LOG_PATH` 环境变量，日志将输出到脚本默认路径 `/tmp/my_module/` 下，例如：
+> 脚本正常启动日志输出如下:
 > ```
 > 2026-08-18 06:30:25 [heartbeat] my_module alive
 > ```
 
+> 如果未设置 `LOG_PATH` 环境变量，日志将输出到脚本默认路径 `/tmp/my_module/` 下，例如：
+
 #### 4.3.2 重启机器后验证
 
-重启后依次检查：
+重启后在板端执行如下指令：
 
 ```bash
-# 查看心跳日志
-cat /robot/persist/log/my_module/heartbeat.log
-
-# 查看错误日志
-cat /tmp/my_module.err
-
 # 查看所有运行模块状态（模块启动成功后会在此列表中显示）
 yamo em doctor
 ```
 
-> 心跳日志中出现类似以下内容，说明模块自启动成功：
-> ```
-> 2026-08-18 06:30:25 [heartbeat] my_module alive
-> ```
+> 自定义模块正常运行打印如下: 
+
+| 应用名称 | PID | 启动时间 | EM 状态 | 实际状态 |
+| :--- | :--- | :--- | :--- | :--- |
+| agent | 1427 | 2026-08-18 21:15:07 | Running(1892) | Running |
+| mc | 1373 | 2026-08-18 21:15:07 | Running(1373) | Running |
+| task_engine | 1363 | 2026-08-18 21:15:07 | Running(1363) | Running |
+| my_module | 1024 | 2026-08-18 21:15:07 | Running(1024) | Running |
 
 #### 4.3.3 常用管理命令
 
@@ -807,13 +806,6 @@ yamo em doctor
 yamo em stop-app my_module      # 停止
 yamo em start-app my_module     # 启动
 ```
-
-### 4.4 注意事项
-
-- `path` 必须是绝对路径，不支持 `~` 或相对路径。
-- 日志建议放在 `/robot/persist/log/` 下，重启后保留；`/tmp/` 下的日志重启后会丢失。
-- 不要删除或修改已有应用的配置，仅添加新条目。
-
 
 ## 5. 开发者模式说明
 
