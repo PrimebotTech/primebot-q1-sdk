@@ -105,7 +105,7 @@ public:
       auto request =
           std::make_shared<aimdk_msgs::srv::SetMcPresetMotion::Request>();
       request->header.stamp = this->now();
-      request->source = "preset_motion";
+      request->source = "sdk_rpc";
       request->motion.value = motion_id;
       request->interrupt = true;
 
@@ -142,6 +142,56 @@ public:
     }
   }
 
+  bool send_custom_request(const std::string & ani_path) {
+    if (!ensure_ready_state()) {
+      RCLCPP_ERROR(this->get_logger(),
+                   "Failed to prepare robot state for custom motion.");
+      return false;
+    }
+
+    try {
+      auto request =
+          std::make_shared<aimdk_msgs::srv::SetMcPresetMotion::Request>();
+      request->header.stamp = this->now();
+      request->source = "sdk_rpc";
+      request->motion.value = 0;  // not using built-in enum
+      request->interrupt = true;
+      request->ani_path = ani_path;  // custom motion file path
+
+      RCLCPP_INFO(this->get_logger(),
+                  "Sending custom motion request: path=%s", ani_path.c_str());
+
+      auto future = call_service_with_retry<aimdk_msgs::srv::SetMcPresetMotion>(
+          preset_client_, request, "SetMcPresetMotion");
+
+      if (!future.valid()) {
+        RCLCPP_ERROR(this->get_logger(), "Service call failed or timed out.");
+        return false;
+      }
+
+      auto response = future.get();
+      if (response && response->response.header.code == 0) {
+        RCLCPP_INFO(this->get_logger(),
+                    "Custom motion request accepted. Task ID: %lu",
+                    response->response.task_id);
+        return true;
+      }
+
+      if (response) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "SetMcPresetMotion (custom) failed. code=%ld status=%d reason=%u",
+                     response->response.header.code,
+                     response->response.state.value,
+                     response->response.state.reason);
+      }
+
+      return false;
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Exception occurred: %s", e.what());
+      return false;
+    }
+  }
+
 private:
   void wait_for_services() {
     auto wait = [this](auto &client, const std::string &name) {
@@ -158,7 +208,7 @@ private:
   bool ensure_ready_state() {
     aimdk_examples::McActionSwitcher switcher(this->shared_from_this());
     aimdk_examples::McActionSwitchOptions options;
-    options.source = "preset_motion";
+    options.source = "sdk_rpc";
     options.total_timeout = std::chrono::seconds(30);
 
     const auto result = switcher.switch_to("BIPED_WHOLE_BODY_CTRL", options);
@@ -184,7 +234,35 @@ int main(int argc, char *argv[]) {
     g_node = std::make_shared<PresetMotionClient>();
     auto client = std::dynamic_pointer_cast<PresetMotionClient>(g_node);
 
-    // Prompt user to refer to documentation
+    // Choose between built-in preset and custom motion file
+    std::cout << "\nOptions:" << std::endl;
+    std::cout << "  [1] Play built-in preset motion" << std::endl;
+    std::cout << "  [2] Play custom motion file (from teaching)" << std::endl;
+    std::cout << "Enter choice (1/2): ";
+    std::string choice;
+    std::getline(std::cin, choice);
+    choice.erase(std::remove_if(choice.begin(), choice.end(), ::isspace), choice.end());
+
+    if (choice == "2") {
+        std::cout << "\nEnter custom motion file path "
+                  << "(e.g. /robot/userdata/sd/custom_motions/my_motion.csv): ";
+        std::string ani_path;
+        std::getline(std::cin, ani_path);
+        if (ani_path.empty()) {
+            std::cerr << "No path provided." << std::endl;
+            g_node.reset();
+            rclcpp::shutdown();
+            return 1;
+        }
+        if (client) {
+            client->send_custom_request(ani_path);
+        }
+        g_node.reset();
+        rclcpp::shutdown();
+        return 0;
+    }
+
+    // Built-in preset motion flow
     std::cout << "\nPlease refer to the interface documentation for the list of supported motions for this model." << std::endl;
     // Ask for robot series (Q or T)
     std::cout << "\nEnter robot series (Q/T): ";
