@@ -391,6 +391,7 @@ class McActionSwitcher:
     ) -> bool:
         assert self._node is not None
         assert self._set_action_client is not None
+        time.sleep(0.5)
         request = SetMcAction.Request()
         request.header = RequestHeader()
         request.header.stamp = self._node.get_clock().now().to_msg()
