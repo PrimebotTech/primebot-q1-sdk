@@ -203,3 +203,12 @@ int32 BIPED_SIT_DOWN = 1013
 
 # 二开上肢控制
 int32 BIPED_CUSTOM_UPPER = 1014
+
+# 超能模式/跑步模式
+int32 BIPED_RUN = 1015
+
+# 入座
+int32 BIPED_TAKE_SEAT = 1016
+
+# 离座
+int32 BIPED_LEAVE_SEAT = 1017
