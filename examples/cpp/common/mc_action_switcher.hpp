@@ -370,19 +370,35 @@ class McActionSwitcher
       auto future = get_action_client_->async_send_request(request);
       const auto return_code = rclcpp::spin_until_future_complete(
           node_, future, options.service_wait_timeout);
-      if (return_code != rclcpp::FutureReturnCode::SUCCESS) {
+
+      if (return_code == rclcpp::FutureReturnCode::SUCCESS) {
+        const auto response = future.get();
+        try {
+          if (!response || response->header.code != 0) {
+            const auto code = response ? std::to_string(response->header.code)
+                                       : std::string("null");
+            RCLCPP_WARN(node_->get_logger(),
+                        "GetMcAction attempt %d/%d returned code=%s.",
+                        attempt, max_retries, code.c_str());
+          } else if (response->info.action_desc.empty()) {
+            RCLCPP_WARN(node_->get_logger(),
+                        "GetMcAction attempt %d/%d returned empty action_desc.",
+                        attempt, max_retries);
+          } else {
+            action.action_desc = response->info.action_desc;
+            action.status = response->info.status.value;
+            return true;
+          }
+        } catch (const std::exception & e) {
+          RCLCPP_WARN(node_->get_logger(),
+                      "GetMcAction attempt %d/%d failed: %s.",
+                      attempt, max_retries, e.what());
+        }
+      } else {
         RCLCPP_WARN(
             node_->get_logger(),
             "GetMcAction attempt %d/%d timed out or was interrupted.",
             attempt, max_retries);
-      } else {
-        const auto response = future.get();
-        if (!response || response->header.code != 0) {
-          return false;
-        }
-        action.action_desc = response->info.action_desc;
-        action.status = response->info.status.value;
-        return true;
       }
 
       if (attempt < max_retries) {
@@ -395,24 +411,56 @@ class McActionSwitcher
   bool request_action(const std::string & action_desc,
                       const McActionSwitchOptions & options) const
   {
-    auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
-    request->header.stamp = node_->now();
-    request->source = options.source;
-    request->command = aimdk_msgs::msg::McActionCommand();
-    request->command.action_desc = action_desc;
-
+    constexpr int max_retries = 3;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     RCLCPP_INFO(node_->get_logger(), "Requesting MC action: %s",
                 action_desc.c_str());
-    auto future = set_action_client_->async_send_request(request);
-    if (rclcpp::spin_until_future_complete(node_, future,
-                                           options.service_call_timeout) !=
-        rclcpp::FutureReturnCode::SUCCESS) {
-      return false;
+
+    for (int attempt = 1; attempt <= max_retries; ++attempt) {
+      auto request = std::make_shared<aimdk_msgs::srv::SetMcAction::Request>();
+      request->header.stamp = node_->now();
+      request->source = options.source;
+      request->command = aimdk_msgs::msg::McActionCommand();
+      request->command.action_desc = action_desc;
+
+      auto future = set_action_client_->async_send_request(request);
+      const auto return_code = rclcpp::spin_until_future_complete(
+          node_, future, options.service_call_timeout);
+
+      if (return_code != rclcpp::FutureReturnCode::SUCCESS) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "SetMcAction(%s) attempt %d/%d timed out.",
+                    action_desc.c_str(), attempt, max_retries);
+        if (attempt < max_retries) {
+          std::this_thread::sleep_for(options.poll_interval);
+        }
+        continue;
+      }
+
+      try {
+        const auto response = future.get();
+        if (response && response->response.header.code == 0 &&
+            response->response.state.value == aimdk_msgs::msg::CommonState::SUCCESS) {
+          return true;
+        }
+
+        // 服务端返回了但状态未成功 → 不重试
+        const auto code = response ? std::to_string(response->response.header.code)
+                                   : std::string("null");
+        RCLCPP_WARN(node_->get_logger(),
+                    "SetMcAction(%s) rejected: code=%s.",
+                    action_desc.c_str(), code.c_str());
+        return false;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "SetMcAction(%s) attempt %d/%d failed: %s.",
+                    action_desc.c_str(), attempt, max_retries, e.what());
+        if (attempt < max_retries) {
+          std::this_thread::sleep_for(options.poll_interval);
+        }
+      }
     }
-    const auto response = future.get();
-    return response &&
-           response->response.header.code == 0 &&
-           response->response.state.value == aimdk_msgs::msg::CommonState::SUCCESS;
+    return false;
   }
 
   bool wait_for_action(const std::string & expected_action,

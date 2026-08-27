@@ -372,11 +372,19 @@ class McActionSwitcher:
                     )
                 else:
                     if response is None or response.header.code != 0:
-                        return None
-                    return _ActionState(
-                        action_desc=response.info.action_desc,
-                        status=response.info.status.value,
-                    )
+                        code = response.header.code if response else "None"
+                        self._node.get_logger().warning(
+                            f"GetMcAction attempt {attempt}/3 returned code={code}"
+                        )
+                    elif not response.info.action_desc:
+                        self._node.get_logger().warning(
+                            f"GetMcAction attempt {attempt}/3 returned empty action_desc"
+                        )
+                    else:
+                        return _ActionState(
+                            action_desc=response.info.action_desc,
+                            status=response.info.status.value,
+                        )
             else:
                 self._node.get_logger().warning(
                     f"GetMcAction attempt {attempt}/3 timed out or was interrupted."
@@ -392,32 +400,56 @@ class McActionSwitcher:
         assert self._node is not None
         assert self._set_action_client is not None
         time.sleep(0.5)
-        request = SetMcAction.Request()
-        request.header = RequestHeader()
-        request.header.stamp = self._node.get_clock().now().to_msg()
-        request.source = options.source
-        request.command = McActionCommand()
-        request.command.action_desc = action_desc
-
         self._node.get_logger().info(f"Requesting MC action: {action_desc}")
-        future = self._set_action_client.call_async(request)
-        rclpy.spin_until_future_complete(
-            self._node, future, timeout_sec=options.service_call_timeout
-        )
-        if not future.done():
-            return False
-        try:
-            response = future.result()
-        except Exception as error:
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            request = SetMcAction.Request()
+            request.header = RequestHeader()
+            request.header.stamp = self._node.get_clock().now().to_msg()
+            request.source = options.source
+            request.command = McActionCommand()
+            request.command.action_desc = action_desc
+
+            future = self._set_action_client.call_async(request)
+            rclpy.spin_until_future_complete(
+                self._node, future, timeout_sec=options.service_call_timeout
+            )
+
+            if not future.done():
+                self._node.get_logger().warning(
+                    f"SetMcAction({action_desc}) attempt {attempt}/{max_retries} "
+                    "timed out."
+                )
+                if attempt < max_retries:
+                    time.sleep(options.poll_interval)
+                continue
+
+            try:
+                response = future.result()
+            except Exception as error:
+                self._node.get_logger().warning(
+                    f"SetMcAction({action_desc}) attempt {attempt}/{max_retries} "
+                    f"failed: {error}"
+                )
+                if attempt < max_retries:
+                    time.sleep(options.poll_interval)
+                continue
+
+            # 服务端接受且状态成功 → 直接返回
+            if (response is not None
+                    and response.response.header.code == 0
+                    and response.response.state.value == CommonState.SUCCESS):
+                return True
+
+            # 服务端返回了但状态未成功 → 不重试，让上层状态机决定
             self._node.get_logger().warning(
-                f"SetMcAction request for {action_desc} failed: {error}"
+                f"SetMcAction({action_desc}) rejected: "
+                f"code={response.response.header.code}"
             )
             return False
-        return (
-            response is not None
-            and response.response.header.code == 0
-            and response.response.state.value == CommonState.SUCCESS
-        )
+
+        # 全部重试用完（都是超时）
+        return False
 
     def _wait_for_action(
         self,
