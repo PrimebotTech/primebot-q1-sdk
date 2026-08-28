@@ -87,7 +87,7 @@ class McActionSwitcher:
         "PASSIVE_DEFAULT": (
             "BIPED_STAND_DEFAULT", "LYING_DEFAULT", "STAND_UP",
             "STORE_DEFAULT", "BIPED_GROUND_POSE", "LIE_FACE_DOWN",
-            "LIE_FACE_UP",
+            "LIE_FACE_UP", "BIPED_LEAVE_SEAT",
         ),
         "DAMPING_DEFAULT": ("PASSIVE_DEFAULT",),
         "BIPED_STAND_DEFAULT": (
@@ -107,7 +107,7 @@ class McActionSwitcher:
             "BIPED_WHOLE_BODY_CTRL", "BIPED_STAND_DEFAULT",
             "BIPED_WALK_RUN_DEFAULT", "LIE_FACE_UP", "LIE_FACE_DOWN",
             "BIPED_BLIND_TERRAIN", "STORE_DEFAULT", "BIPED_RECORD_UPPER",
-            "BIPED_CUSTOM_UPPER",
+            "BIPED_CUSTOM_UPPER", "BIPED_TAKE_SEAT", "BIPED_RUN",
         ),
         "BIPED_WALK_RUN_DEFAULT": (
             "BIPED_STAND_DEFAULT", "BIPED_WHOLE_BODY_CTRL", "BIPED_WALK_RUN",
@@ -122,12 +122,16 @@ class McActionSwitcher:
             "BIPED_WHOLE_BODY_CTRL", "BIPED_BLIND_TERRAIN",
             "BIPED_WALK_RUN", "BIPED_WALK_RUN_DEFAULT",
         ),
+        "BIPED_LEAVE_SEAT": ("BIPED_WALK_RUN",),
+        "BIPED_TAKE_SEAT": ("PASSIVE_DEFAULT",),
+        "BIPED_RUN": ("BIPED_WALK_RUN",),
     }
 
     _SKIP_ACTIONS: Set[str] = {
         "PASSIVE_DEFAULT", "BIPED_WALK_RUN", "BIPED_BLIND_TERRAIN",
         "LIE_FACE_UP", "LIE_FACE_DOWN", "STAND_UP", "STORE_DEFAULT",
         "BIPED_STAND_DEFAULT", "BIPED_WALK_RUN_DEFAULT",
+        "BIPED_LEAVE_SEAT", "BIPED_TAKE_SEAT",
     }
     _AUTOMATIC_NEXT_ACTIONS: Dict[str, str] = {
         "STAND_UP": "BIPED_WALK_RUN",
