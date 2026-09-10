@@ -9,14 +9,19 @@
  Supported parameters:
    - file_name: audio file name only
    - file_path: directory containing the audio file
- 
+   - media_role: PulseAudio media.role (default: Music)
+     Alert(系统告警,优先级100) | Notification(系统提示音,优先级80)
+     Communication(对话语音,优先级60) | Music(音乐/媒体,优先级40)
+     非 Music 角色播放时会自动降低(duck)音乐音量
+
  Usage:
    ros2 run aimdk_examples_cpp play_audio --ros-args -p
-   file_name:=demo.wav -p file_path:=/tmp
- 
+   file_name:=demo.wav -p file_path:=/tmp -p media_role:=Music
+
  Examples:
    ros2 run aimdk_examples_cpp play_audio --ros-args -p
    file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
+   -p media_role:=Music
  
  Other request fields use built-in defaults and are not configurable from
  the command line in this demo.
@@ -60,6 +65,8 @@ class PlayAudioFileClient : public rclcpp::Node
       this->declare_parameter<std::string>("file_name", file_name_);
     file_path_ =
       this->declare_parameter<std::string>("file_path", file_path_);
+    media_role_ =
+      this->declare_parameter<std::string>("media_role", media_role_);
 
     client_ = this->create_client<aimdk_msgs::srv::PlayAudioFile>(service_name_);
     RCLCPP_INFO(this->get_logger(), "PlayAudioFile client node created.");
@@ -92,6 +99,7 @@ class PlayAudioFileClient : public rclcpp::Node
     request->file.info.coding_format = coding_format_;
     request->file.priority           = static_cast<uint32_t>(priority_);
     request->file.priority_weight    = static_cast<uint32_t>(priority_weight_);
+    request->file.media_role         = media_role_;
 
     RCLCPP_INFO(this->get_logger(),
                 "Sending PlayAudioFile request: file=%s, path=%s, pkg=%s, "
@@ -172,6 +180,7 @@ class PlayAudioFileClient : public rclcpp::Node
   int size_                  = 0;
   int priority_              = 6;
   int priority_weight_       = 0;
+  std::string media_role_    = "Music";
   rclcpp::Client<aimdk_msgs::srv::PlayAudioFile>::SharedPtr client_;
 };
 
