@@ -12,6 +12,7 @@ find_package(OpenCV 4.13.0 EXACT REQUIRED CONFIG COMPONENTS core imgproc imgcode
 find_package(ruckig_for_primebot REQUIRED)
 
 set(EXAMPLE_TARGETS
+  get_asr_result
   get_audio_device_list
   get_bms_state
   get_jpg
@@ -19,8 +20,8 @@ set(EXAMPLE_TARGETS
   get_video_stream
   joint_control
   mc_locomotion_velocity
-  play_audio
-  play_audio_file
+  play_audio_from_pc
+  play_audio_from_robot
   play_emotion
   play_lights
   record_audio

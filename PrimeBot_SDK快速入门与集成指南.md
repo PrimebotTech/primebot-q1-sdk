@@ -10,6 +10,7 @@
         - [2.1.3 通讯环境](#213-通讯环境)
         - [2.1.4 用户可操作目录](#214-用户可操作目录)
         - [2.1.5 三方库与编译依赖](#215-三方库与编译依赖)
+        - [2.1.6 Docker 编译环境（推荐）](#216-docker-编译环境推荐)
     - [2.2 安装与编译](#22-安装与编译)
         - [2.2.1 编译操作](#221-编译操作)
         - [2.2.2 命令行交互验证](#222-命令行交互验证)
@@ -293,6 +294,17 @@ colcon build --packages-up-to aimdk_examples_cpp --symlink-install
 pip3 install numpy opencv-python
 ```
 > **说明**：Ruckig 的 C++ 库与 Python 模块均从 `examples/ruckig_for_primebot/` 源码构建。`colcon build` 会通过 `nanobind` 生成 Python 模块并复制到 `examples/python/`；该 `.so` 是本机构建产物，不随 SDK 提交。
+
+#### 2.1.6 Docker 编译环境（推荐）
+
+如果您不想在本机手动配置上述编译依赖，可以使用我们提供的 **Docker 容器**进行一键编译，开箱即用：
+
+| 开发场景 | Docker 镜像项目 | 说明 |
+| :--- | :--- | :--- |
+| **交叉编译 ARM（机器人板载部署）** | `docker_x86_cross_arm` | 在 x86 PC 上交叉编译 ARM 架构产物，编译产物可直接部署到机器人板端 |
+| **原生编译 x86（开发 PC 运行）** | `docker_x86_native_x86` | 在 x86 PC 上编译 x86 架构产物，适用于开发 PC 本地运行与调试 |
+
+> **提示**：使用 Docker 编译时，可以跳过 [2.1.5](#215-三方库与编译依赖) 中的本机依赖安装步骤，容器内已预置全部编译所需的环境与工具链。详细操作请参考对应项目中的 **ARM交叉编译完整指南.md** 和 **X86编译完整指南.md**。
 
 ---
 
@@ -1055,20 +1067,22 @@ SDK 配置中已提供 `aimdk_shm_transport` 描述符，但默认 participant �
 
 SSH 登录机器人对应板卡（运控板或大脑板），将日志目录打包：
 
+> **注意**：打包文件请输出到 `/robot/persist/log/` 目录，不要放到 `/tmp`。`/tmp` 空间较小，不适合存放较大的日志包；`/robot/persist/log/` 目录会有定期清理机制，无需担心磁盘占满。
+
 ```bash
-# 打包系统日志
-tar -czf /tmp/robot_logs_$(date +%Y%m%d_%H%M%S).tar.gz /robot/persist/log/
+# 打包系统日志（输出到 /robot/persist/log/）
+tar -czf /robot/persist/log/robot_logs_$(date +%Y%m%d_%H%M%S).tar.gz /robot/persist/log/
 
 # 打包 ROS2 Bag 数据包（如有）
-tar -czf /tmp/robot_bags_$(date +%Y%m%d_%H%M%S).tar.gz /robot/persist/bag/
+tar -czf /robot/persist/log/robot_bags_$(date +%Y%m%d_%H%M%S).tar.gz /robot/persist/bag/
 ```
 
 打包完成后，通过 `scp` 将日志文件传输到开发 PC：
 
 ```bash
 # 在开发 PC 上执行
-scp run@<板卡IP>:/tmp/robot_logs_*.tar.gz ./
-scp run@<板卡IP>:/tmp/robot_bags_*.tar.gz ./
+scp run@<板卡IP>:/robot/persist/log/robot_logs_*.tar.gz ./
+scp run@<板卡IP>:/robot/persist/log/robot_bags_*.tar.gz ./
 ```
 
 **3. 查看模块运行状态**

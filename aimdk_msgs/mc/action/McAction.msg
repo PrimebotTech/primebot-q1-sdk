@@ -122,11 +122,11 @@ int32 BIPED_LOCOMOTION_DEFAULT = 202
 # 两足越障行走模式
 int32 BIPED_LOCOMOTION_TERRAIN = 203
 
-# 双足原地旋转
-int32 BIPED_LOCOMOTION_ROTATE_LOCAL = 204
+# 双足原地旋转(删除)
+# int32 BIPED_LOCOMOTION_ROTATE_LOCAL = 204
 
-# 双足下腰模式
-int32 BIPED_LOCOMOTION_BACKBEND = 205
+# 双足下腰模式(删除)
+# int32 BIPED_LOCOMOTION_BACKBEND = 205
 
 # 双足太空步
 int32 BIPED_LOCOMOTION_MOONWALK = 206
@@ -137,11 +137,11 @@ int32 BIPED_LOCOMOTION_RUN = 207
 # 双足模仿动作
 int32 BIPED_MIMIC = 208
 
-# 双足羽生结弦
-int32 BIPED_YUZURU = 209
+# 双足羽生结弦(删除)
+# int32 BIPED_YUZURU = 209
 
-# 双足劈叉
-int32 BIPED_SPLIT = 210
+# 双足劈叉(删除)
+# int32 BIPED_SPLIT = 210
 
 # 双足全身控制模式
 int32 BIPED_LOCOMOTION_WBC = 300
@@ -155,8 +155,8 @@ int32 BIPED_RECORD_UPPER = 302
 # 双足 gimbal 轨迹移动模式
 int32 BIPED_GIMBAL = 303
 
-# 双足转圈
-int32 BIPED_MIMIC_ROTATE_DANCE = 400 
+# 双足转圈(删除)
+# int32 BIPED_MIMIC_ROTATE_DANCE = 400
 
 # ============================================================================
 # Q 系列Action
@@ -212,3 +212,9 @@ int32 BIPED_TAKE_SEAT = 1016
 
 # 离座
 int32 BIPED_LEAVE_SEAT = 1017
+
+# 模仿动作_V2
+int32 MIMIC_V2 = 1018
+
+# 模仿动作-开源_V2
+int32 MIMIC_OPENSOURCE_V2 = 1019
