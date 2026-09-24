@@ -1083,7 +1083,18 @@ tar -czf /robot/persist/log/robot_bags_$(date +%Y%m%d_%H%M%S).tar.gz /robot/pers
 # 在开发 PC 上执行
 scp run@<板卡IP>:/robot/persist/log/robot_logs_*.tar.gz ./
 scp run@<板卡IP>:/robot/persist/log/robot_bags_*.tar.gz ./
+
+# 使用 SSH 密钥（新版机器人需要密钥登录）
+scp -i ./<机器人SN>_soc0/id_ed25519 run@<板卡IP>:/robot/persist/log/robot_logs_*.tar.gz ./
+scp -i ./<机器人SN>_soc0/id_ed25519 run@<板卡IP>:/robot/persist/log/robot_bags_*.tar.gz ./
 ```
+
+> **SSH 密钥权限说明**：使用 `-i SSH_KEY` 参数时，密钥目录通常以 root 权限解压，需要修改为当前用户所有：
+> ```bash
+> sudo chown -R $USER:$USER ./<机器人SN>_soc0/
+> chmod 600 ./<机器人SN>_soc0/id_ed25519
+> ```
+> 其中 `<机器人SN>_soc0` 为密钥目录名称，每台机器人的目录名称不同。
 
 **3. 查看模块运行状态**
 
