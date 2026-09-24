@@ -1,5 +1,5 @@
 /*
- @brief Example client for /aimdk_5Fmsgs/srv/PlayAudioFile
+ @brief Example client for /aimdk_5Fmsgs/srv/PlayAudioFile (读取机器人本机磁盘音频文件播放)
  
  Default sample rate is 24kHz. Audio files must be 24kHz, 16-bit PCM, mono WAV format.
  
@@ -15,11 +15,11 @@
      非 Music 角色播放时会自动降低(duck)音乐音量
 
  Usage:
-   ros2 run aimdk_examples_cpp play_audio --ros-args -p
+   ros2 run aimdk_examples_cpp play_audio_from_robot --ros-args -p
    file_name:=demo.wav -p file_path:=/tmp -p media_role:=Music
 
  Examples:
-   ros2 run aimdk_examples_cpp play_audio --ros-args -p
+   ros2 run aimdk_examples_cpp play_audio_from_robot --ros-args -p
    file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio
    -p media_role:=Music
  
@@ -59,7 +59,7 @@ void signal_handler(int signal)
 class PlayAudioFileClient : public rclcpp::Node
 {
  public:
-  PlayAudioFileClient() : Node("play_audio_file_client")
+  PlayAudioFileClient() : Node("play_audio_from_robot_client")
   {
     file_name_ =
       this->declare_parameter<std::string>("file_name", file_name_);

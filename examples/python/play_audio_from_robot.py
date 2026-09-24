@@ -14,10 +14,10 @@ Prerequisites:
   - Audio output device must be working properly
 
 Usage:
-  python3 play_audio.py --ros-args -p file_name:=<filename> -p file_path:=<directory> -p media_role:=<role>
+  python3 play_audio_from_robot.py --ros-args -p file_name:=<filename> -p file_path:=<directory> -p media_role:=<role>
 
 Example:
-  python3 play_audio.py --ros-args -p file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio -p media_role:=Music
+  python3 play_audio_from_robot.py --ros-args -p file_name:=小星星.wav -p file_path:=/robot/software/aimrt_agent/bin/cfg/q1/audio -p media_role:=Music
 
 Parameters:
   - file_name: Audio file name to play (default: 小星星.wav)
@@ -39,7 +39,7 @@ from aimdk_msgs.srv import PlayAudioFile
 
 class PlayAudioFileClient(Node):
     def __init__(self):
-        super().__init__("play_audio_file_client")
+        super().__init__("play_audio_from_robot_client")
         self.file_name = self.declare_parameter("file_name", "小星星.wav").value
         self.file_path = self.declare_parameter("file_path", "/robot/software/aimrt_agent/bin/cfg/q1/audio").value
         self.media_role = self.declare_parameter("media_role", "Music").value
@@ -53,7 +53,6 @@ class PlayAudioFileClient(Node):
         self.size = 0
         self.priority = 6
         self.priority_weight = 0
-        self.media_role = "Music"
 
         self.client = self.create_client(PlayAudioFile, self.service_name)
         self.get_logger().info("PlayAudioFile client node created.")
