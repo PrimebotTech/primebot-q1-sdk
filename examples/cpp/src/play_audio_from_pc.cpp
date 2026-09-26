@@ -23,7 +23,7 @@
    ./examples/cpp/play_audio_from_pc [-i SSH_KEY] <机器人IP> <音频文件>
 
    可选参数：
-     -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+     -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
  @example
    ./examples/cpp/play_audio_from_pc <机器人IP> mic_mono.wav
@@ -440,7 +440,7 @@ int main(int argc, char *argv[]) {
     printf("支持格式: .pcm (48kHz mono S16LE), .wav (自动转换)\n");
     printf("\n");
     printf("  可选参数：\n");
-    printf("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）\n");
+    printf("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）\n");
     return 1;
   }
 

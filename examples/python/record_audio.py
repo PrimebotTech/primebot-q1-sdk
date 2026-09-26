@@ -32,7 +32,7 @@
   否则使用远程模式（TCP）。
 
   可选参数：
-    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
 示例：
   # 本机录音（共享内存）
@@ -105,7 +105,7 @@ def setup_and_detect_source(robot_ip, ssh_key=None):
 
     Args:
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
 
     Returns:
         str: 默认录音源名称（空字符串表示检测失败）。
@@ -204,7 +204,7 @@ def get_default_source(local_mode, robot_ip, ssh_key=None):
     Args:
         local_mode: True 表示本机模式，False 表示远程模式。
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
     """
     if local_mode:
         cmd = "pactl get-default-source"
@@ -231,7 +231,7 @@ def detect_mic_profile(local_mode, robot_ip, ssh_key=None):
     Args:
         local_mode: True 表示本机模式，False 表示远程模式。
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
 
     Returns:
         dict: {device, channels, sample_width, format, bits_per_sample, is_builtin}
@@ -412,7 +412,7 @@ if __name__ == "__main__":
         print("  否则使用远程模式（TCP）")
         print()
         print("  可选参数：")
-        print("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）")
+        print("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）")
         sys.exit(1)
 
     # 解析可选参数 -i SSH_KEY

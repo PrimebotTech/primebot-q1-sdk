@@ -22,7 +22,7 @@
   python3 examples/python/play_audio_from_pc.py [-i SSH_KEY] <机器人IP> <音频文件>
 
   可选参数：
-    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
 示例：
   python3 examples/python/play_audio_from_pc.py <机器人IP> mic_mono.wav
@@ -187,7 +187,7 @@ def main():
         print("用法: %s [-i SSH_KEY] <机器人IP> <audio_file>" % sys.argv[0])
         print()
         print("  可选参数：")
-        print("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）")
+        print("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）")
         print()
         print("支持格式: .pcm (48kHz mono S16LE), .wav (自动转换)")
         sys.exit(1)

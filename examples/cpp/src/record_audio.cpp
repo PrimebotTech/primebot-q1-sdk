@@ -33,7 +33,7 @@
    否则使用远程模式（TCP）。
 
    可选参数：
-     -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+     -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
  @example
    # 本机录音（共享内存）
@@ -387,7 +387,7 @@ int main(int argc, char *argv[]) {
     printf("  否则使用远程模式（TCP）\n");
     printf("\n");
     printf("  可选参数：\n");
-    printf("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）\n");
+    printf("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）\n");
     return 1;
   }
 
