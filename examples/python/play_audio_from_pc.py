@@ -12,9 +12,11 @@
 
 前提条件：
   - 示例脚本会通过 SSH 自动在机器人端加载 TCP 播放模块（端口 6001）
-  - 使用 SSH 密钥时：密钥目录通常以 root 权限解压，需要修改为当前用户所有：
+  - 使用 SSH 密钥时：将售后提供的密钥目录（<机器人SN>_soc0/）放到 SDK 根目录下
+    （与 examples/ 同级），并修改权限：
     sudo chown -R $USER:$USER ./<机器人SN>_soc0/
     chmod 600 ./<机器人SN>_soc0/id_ed25519
+    然后在 SDK 根目录下执行示例命令，使用 -i ./<机器人SN>_soc0/id_ed25519 指定密钥。
 
 用法：
   python3 examples/python/play_audio_from_pc.py [-i SSH_KEY] <机器人IP> <音频文件>
@@ -23,8 +25,9 @@
     -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
 
 示例：
-  python3 examples/python/play_audio_from_pc.py 10.1.1.100 mic_mono.wav
-  python3 examples/python/play_audio_from_pc.py -i ./<机器人SN>_soc0/id_ed25519 172.31.45.200 mic_mono.wav
+  python3 examples/python/play_audio_from_pc.py <机器人IP> mic_mono.wav
+  # 使用 SSH 密钥（网线连接时 IP 为 10.1.1.100）
+  python3 examples/python/play_audio_from_pc.py -i ./<机器人SN>_soc0/id_ed25519 10.1.1.100 mic_mono.wav
 """
 
 import socket
