@@ -13,14 +13,16 @@ primebot_sdk/
 ├── 接口说明.md                         # 全量 Service/Topic 接口定义与参数手册
 ├── 友好用户使用声明.md                  # 友好用户使用声明（必读）
 ├── aimdk_msgs/                        # 接口消息包 (ROS2 msg/srv 定义)
+│   ├── agent/                         # AI Agent 层
+│   │   └── msg/                       #   ASR 语音识别结果
 │   ├── config/                        # SDK 默认 FastDDS 通信配置
 │   ├── env-hooks/                     # colcon setup 自动加载的环境钩子
 │   ├── common/                        # 任务响应与基础类型定义
 │   ├── hal/                           # 硬件抽象层
 │   │   ├── audio/                     #   音频采集/播放
 │   │   ├── camera/                    #   相机图像/RTSP 流
-│   │   ├── msg/                       #   BMS / 触摸 / 关节 / 灯带等状态消息
-│   │   └── srv/                       #   灯带 / 颈部灯带 / 舵机 等服务
+│   │   ├── msg/                       #   BMS / 触摸 / 关节 等状态消息
+│   │   └── srv/                       #   灯带控制 等服务
 │   ├── interaction/                   # 交互层
 │   │   ├── msg/                       #   TTS 请求/响应 / 优先级
 │   │   └── srv/                       #   表情播放 / TTS 语音播报

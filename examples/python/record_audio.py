@@ -19,9 +19,11 @@
   - 远程模式：示例脚本会通过 SSH 自动在机器人端加载 TCP 录音模块（端口 4713）
   - 本机模式：无需额外配置，直接使用 PulseAudio 本地 socket
   - 本机已安装 parec：sudo apt install pulseaudio-utils
-  - 使用 SSH 密钥时：密钥目录通常以 root 权限解压，需要修改为当前用户所有：
+  - 使用 SSH 密钥时：将售后提供的密钥目录（<机器人SN>_soc0/）放到 SDK 根目录下
+    （与 examples/ 同级），并修改权限：
     sudo chown -R $USER:$USER ./<机器人SN>_soc0/
     chmod 600 ./<机器人SN>_soc0/id_ed25519
+    然后在 SDK 根目录下执行示例命令，使用 -i ./<机器人SN>_soc0/id_ed25519 指定密钥。
 
 用法：
   python3 examples/python/record_audio.py [-i SSH_KEY] <机器人IP> [录音秒数]
@@ -30,17 +32,17 @@
   否则使用远程模式（TCP）。
 
   可选参数：
-    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
 示例：
   # 本机录音（共享内存）
   python3 examples/python/record_audio.py 127.0.0.1 5
 
-  # 远程录音（TCP，网线连接时 IP 为 10.1.1.100）
-  python3 examples/python/record_audio.py 10.1.1.100 5
+  # 远程录音（TCP）
+  python3 examples/python/record_audio.py <机器人IP> 5
 
-  # 远程录音（使用 SSH 密钥）
-  python3 examples/python/record_audio.py -i ./Q1000P0C800012_soc0/id_ed25519 172.31.45.200 5
+  # 远程录音（使用 SSH 密钥，网线连接时 IP 为 10.1.1.100）
+  python3 examples/python/record_audio.py -i ./<机器人SN>_soc0/id_ed25519 10.1.1.100 5
 """
 
 import subprocess
@@ -103,7 +105,7 @@ def setup_and_detect_source(robot_ip, ssh_key=None):
 
     Args:
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
 
     Returns:
         str: 默认录音源名称（空字符串表示检测失败）。
@@ -202,7 +204,7 @@ def get_default_source(local_mode, robot_ip, ssh_key=None):
     Args:
         local_mode: True 表示本机模式，False 表示远程模式。
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
     """
     if local_mode:
         cmd = "pactl get-default-source"
@@ -229,7 +231,7 @@ def detect_mic_profile(local_mode, robot_ip, ssh_key=None):
     Args:
         local_mode: True 表示本机模式，False 表示远程模式。
         robot_ip: 机器人 IP 地址。
-        ssh_key: SSH 私钥文件路径（可选，新版机器人需要密钥登录）。
+        ssh_key: SSH 私钥文件路径（机器人需要密钥登录）。
 
     Returns:
         dict: {device, channels, sample_width, format, bits_per_sample, is_builtin}
@@ -410,7 +412,7 @@ if __name__ == "__main__":
         print("  否则使用远程模式（TCP）")
         print()
         print("  可选参数：")
-        print("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）")
+        print("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）")
         sys.exit(1)
 
     # 解析可选参数 -i SSH_KEY

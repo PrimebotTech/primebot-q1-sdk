@@ -20,9 +20,11 @@
    - 远程模式：示例脚本会通过 SSH 自动在机器人端加载 TCP 录音模块（端口 4713）
    - 本机模式：无需额外配置，直接使用 PulseAudio 本地 socket
    - 本机已安装 parec：sudo apt install pulseaudio-utils
-   - 使用 SSH 密钥时：密钥目录通常以 root 权限解压，需要修改为当前用户所有：
+   - 使用 SSH 密钥时：将售后提供的密钥目录（<机器人SN>_soc0/）放到 SDK 根目录下
+     （与 examples/ 同级），并修改权限：
      sudo chown -R $USER:$USER ./<机器人SN>_soc0/
      chmod 600 ./<机器人SN>_soc0/id_ed25519
+     然后在 SDK 根目录下执行示例命令，使用 -i ./<机器人SN>_soc0/id_ed25519 指定密钥。
 
  @usage
    ./build/aimdk_examples_cpp/record_audio [-i SSH_KEY] <机器人IP> [录音秒数]
@@ -31,17 +33,17 @@
    否则使用远程模式（TCP）。
 
    可选参数：
-     -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）
+     -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）
 
  @example
    # 本机录音（共享内存）
    ./build/aimdk_examples_cpp/record_audio 127.0.0.1 5
 
-   # 远程录音（TCP，网线连接时 IP 为 10.1.1.100）
-   ./build/aimdk_examples_cpp/record_audio 10.1.1.100 5
+   # 远程录音（TCP）
+   ./build/aimdk_examples_cpp/record_audio <机器人IP> 5
 
-   # 远程录音（使用 SSH 密钥）
-   ./build/aimdk_examples_cpp/record_audio -i ./Q1000P0C800012_soc0/id_ed25519 172.31.45.200 5
+   # 远程录音（使用 SSH 密钥，网线连接时 IP 为 10.1.1.100）
+   ./build/aimdk_examples_cpp/record_audio -i ./<机器人SN>_soc0/id_ed25519 10.1.1.100 5
  */
 
 #include <algorithm>
@@ -385,7 +387,7 @@ int main(int argc, char *argv[]) {
     printf("  否则使用远程模式（TCP）\n");
     printf("\n");
     printf("  可选参数：\n");
-    printf("    -i SSH_KEY    SSH 私钥文件路径（新版机器人需要密钥登录）\n");
+    printf("    -i SSH_KEY    SSH 私钥文件路径（机器人需要密钥登录）\n");
     return 1;
   }
 
