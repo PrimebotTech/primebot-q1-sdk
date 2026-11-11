@@ -21,7 +21,7 @@ Example:
   python3 get_video_stream.py
   
   # Specify camera, IP, and output path
-  python3 get_video_stream.py --camera head_monocular_centra --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
+  python3 get_video_stream.py --camera head_monocular_centra --ip 10.1.1.100 --output /tmp/my_video.mp4 --duration 10
 
 Parameters:
   - camera_id: Camera identifier (interactive prompt if not provided)
@@ -92,7 +92,7 @@ def parse_args() -> argparse.Namespace:
         "--ip",
         dest="robot_ip",
         default=None,  
-        help="Robot IP address (e.g., 10.1.1.100 or 192.168.1.100).",
+        help="Robot IP address (e.g., 10.1.1.100).",
     )
     
     args = parser.parse_args()

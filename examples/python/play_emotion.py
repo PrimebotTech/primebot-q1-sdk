@@ -5,7 +5,7 @@ Emotion Playback Example Script
 
 Description:
   This script demonstrates how to play robot emotions using the PlayEmotion service.
-  Supports both built-in emotion IDs and custom emotion file paths.
+  Supports built-in emotion IDs, custom emotion file paths, and image display.
 
 Prerequisites:
   - Robot emotion service must be running
@@ -15,16 +15,19 @@ Usage:
   python3 play_emotion.py --ros-args -p type:=<type> -p emotion_ids:="[...]" -p file_paths:="[...]"
 
 Example:
-  # Play built-in emotion with ID 10
-  python3 play_emotion.py --ros-args -p type:=emotion -p emotion_ids:="[10]"
-  
+  # Play built-in emotion with ID 3003
+  python3 play_emotion.py --ros-args -p type:=emotion -p emotion_ids:="[3003]"
+
   # Play custom emotion from file
-  python3 play_emotion.py --ros-args -p type:=file -p file_paths:="['/path/to/emotion.json']"
+  python3 play_emotion.py --ros-args -p type:=file -p file_paths:="['/path/to/emotion.mp4']"
+
+  # Display an image
+  python3 play_emotion.py --ros-args -p type:=image -p file_paths:="['/path/to/image.png']"
 
 Parameters:
-  - type: Emotion type, either 'emotion' or 'file' (default: emotion)
-  - emotion_ids: List of built-in emotion IDs to play (default: [10])
-  - file_paths: List of custom emotion file paths (optional)
+  - type: Emotion type, 'emotion', 'file' or 'image' (default: emotion)
+  - emotion_ids: List of built-in emotion IDs to play (default: [3003])
+  - file_paths: List of custom emotion file paths or image URLs (optional)
 """
 
 import rclpy
@@ -42,13 +45,13 @@ class PlayEmotionClient(Node):
     def __init__(self):
         super().__init__("play_emotion_client")
         self.declare_parameter("type", "emotion")
-        self.declare_parameter("emotion_ids", [10])
+        self.declare_parameter("emotion_ids", [3003])
         self.declare_parameter("file_paths", Parameter.Type.STRING_ARRAY)
 
         self.type = self.get_parameter("type").value
         self.emotion_ids = self.get_parameter_or(
             "emotion_ids",
-            Parameter("emotion_ids", Parameter.Type.INTEGER_ARRAY, [10]),
+            Parameter("emotion_ids", Parameter.Type.INTEGER_ARRAY, [3003]),
         ).value
         self.file_paths = self.get_parameter_or(
             "file_paths",
@@ -69,14 +72,7 @@ class PlayEmotionClient(Node):
             if not self.validate_parameters():
                 return False
 
-             # Q1 直接使用 3003，不尝试 10
-            emotion_ids_to_use = list(self.emotion_ids)
-            if self.type == "emotion" and 10 in self.emotion_ids:
-                # Q1 不支持 ID 10，直接使用 3003
-                self.get_logger().info("Detected ID 10 on Q1, switching to 3003.")
-                emotion_ids_to_use = [3003]
-        
-            ok = self._call_service(self.type, emotion_ids_to_use, list(self.file_paths))
+            ok = self._call_service(self.type, list(self.emotion_ids), list(self.file_paths))
 
             if not ok:
                 self.get_logger().error("PlayEmotion request failed after all attempts.")
@@ -133,9 +129,9 @@ class PlayEmotionClient(Node):
         return False
 
     def validate_parameters(self) -> bool:
-        if self.type not in ("emotion", "file"):
+        if self.type not in ("emotion", "file", "image"):
             self.get_logger().error(
-                f"Invalid parameter 'type': {self.type}. Use 'emotion' or 'file'."
+                f"Invalid parameter 'type': {self.type}. Use 'emotion', 'file' or 'image'."
             )
             return False
 
@@ -145,9 +141,9 @@ class PlayEmotionClient(Node):
             )
             return False
 
-        if self.type == "file" and not self.file_paths:
+        if self.type in ("file", "image") and not self.file_paths:
             self.get_logger().error(
-                "Parameter 'file_paths' must be set when type=file."
+                "Parameter 'file_paths' must be set when type=file or type=image."
             )
             return False
 

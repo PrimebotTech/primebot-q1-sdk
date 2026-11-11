@@ -18,7 +18,7 @@
    ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=action
    
    # Execute specific motion with auto-transition
-   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p motion:=INTRO_POSE6
+   ros2 run aimdk_examples_cpp set_mc_action --ros-args -p type:=motion -p motion:=INTRO_POSE7
  
  Parameters:
    - type: Control type, either 'action' or 'motion' (required)

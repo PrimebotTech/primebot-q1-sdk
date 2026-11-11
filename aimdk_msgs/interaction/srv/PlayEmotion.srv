@@ -1,15 +1,15 @@
 CommonRequest header
 
-# play type, "emotion" or "file"
+# play type, "emotion", "file" or "image"
 string type
 
 # 播放的机器人内置表情id
 int32[] emotion_ids
 
-# 播放的视频地址
+# 视频路径；type=image 时传一个设备本地绝对路径或 HTTP/HTTPS 图片 URL，持续显示
 string[] file_paths
 
-#  优先级，高优先级视频会打断低优先级视频。默认值0
+# 优先级，系统表情默认优先级是0，数字越大优先级越高，低优先级无法打断高优先级,高优先级会打断低优先级；
 int32 priority
 
 # 整体配置的循环播放次数，大于0则播放具体次数。小于等于0，则表示循环播放 。默认值为1，表示播放一次

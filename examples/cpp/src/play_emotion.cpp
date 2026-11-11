@@ -1,28 +1,31 @@
 /*
  Emotion Playback Example Script
- 
+
  Description:
    This script demonstrates how to play robot emotions using the PlayEmotion service.
-   Supports both built-in emotion IDs and custom emotion file paths.
- 
+   Supports built-in emotion IDs, custom emotion file paths, and image display.
+
  Prerequisites:
    - Robot emotion service must be running
    - Emotion files must be available on the robot
- 
+
  Usage:
    ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=<type> -p emotion_ids:="[...]" -p file_paths:="[...]"
- 
+
  Example:
-   # Play built-in emotion with ID 10
-   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=emotion -p emotion_ids:="[10]"
-   
+   # Play built-in emotion with ID 3003
+   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=emotion -p emotion_ids:="[3003]"
+
    # Play custom emotion from file
-   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=file -p file_paths:="['/path/to/emotion.json']"
- 
+   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=file -p file_paths:="['/path/to/emotion.mp4']"
+
+   # Display an image
+   ros2 run aimdk_examples_cpp play_emotion --ros-args -p type:=image -p file_paths:="['/path/to/image.png']"
+
  Parameters:
-   - type: Emotion type, either 'emotion' or 'file' (default: emotion)
-   - emotion_ids: List of built-in emotion IDs to play (default: [10])
-   - file_paths: List of custom emotion file paths (optional)
+   - type: Emotion type, 'emotion', 'file' or 'image' (default: emotion)
+   - emotion_ids: List of built-in emotion IDs to play (default: [3003])
+   - file_paths: List of custom emotion file paths or image URLs (optional)
  */
 #include "aimdk_msgs/srv/play_emotion.hpp"
 #include "aimdk_msgs/msg/common_request.hpp"
@@ -61,7 +64,7 @@ class PlayEmotionClient : public rclcpp::Node
   {
     type_        = this->declare_parameter<std::string>("type", "emotion");
     emotion_ids_ = this->declare_parameter<std::vector<int64_t>>(
-      "emotion_ids", std::vector<int64_t>{10});
+      "emotion_ids", std::vector<int64_t>{3003});
     file_paths_ = this->declare_parameter<std::vector<std::string>>(
       "file_paths", std::vector<std::string>{});
 
@@ -81,15 +84,7 @@ class PlayEmotionClient : public rclcpp::Node
     try {
       if (!validate_parameters()) return false;
 
-       // Q1 直接使用 3003，不尝试 10
-      std::vector<int64_t> emotion_ids_to_use = emotion_ids_;
-      if (type_ == "emotion" && std::find(emotion_ids_.begin(), emotion_ids_.end(), 10) != emotion_ids_.end()) {
-      // Q1 不支持 ID 10，直接使用 3003
-      RCLCPP_INFO(this->get_logger(), "Detected ID 10 on Q1, switching to 3003.");
-      emotion_ids_to_use = {3003};
-    }
-    
-    bool ok = call_service(type_, emotion_ids_to_use, file_paths_);
+    bool ok = call_service(type_, emotion_ids_, file_paths_);
 
       if (!ok) {
         RCLCPP_ERROR(this->get_logger(), "PlayEmotion request failed after all attempts.");
@@ -164,9 +159,9 @@ class PlayEmotionClient : public rclcpp::Node
 
   bool validate_parameters()
   {
-    if (type_ != "emotion" && type_ != "file") return false;
+    if (type_ != "emotion" && type_ != "file" && type_ != "image") return false;
     if (type_ == "emotion" && emotion_ids_.empty()) return false;
-    if (type_ == "file" && file_paths_.empty()) return false;
+    if ((type_ == "file" || type_ == "image") && file_paths_.empty()) return false;
     return true;
   }
 

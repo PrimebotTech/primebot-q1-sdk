@@ -20,7 +20,7 @@ Example:
   python3 set_mc_action.py --ros-args -p type:=action
   
   # Execute specific motion with auto-transition
-  python3 set_mc_action.py --ros-args -p type:=motion -p motion:=INTRO_POSE6
+  python3 set_mc_action.py --ros-args -p type:=motion -p motion:=INTRO_POSE7
 
 Parameters:
   - type: Control type, either 'action' or 'motion' (required)

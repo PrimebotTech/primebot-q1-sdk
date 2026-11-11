@@ -366,7 +366,7 @@ class VolumeControlClient : public rclcpp::Node
      if (get_response->response.header.code != 0 || 
          get_response->response.status.value != aimdk_msgs::msg::CommonState::SUCCESS) {
        RCLCPP_ERROR(this->get_logger(),
-                    "GetMute failed. code=%ld status=%d reason=%u",
+                    "GetVolume failed. code=%ld status=%d reason=%u",
                     get_response->response.header.code,
                     get_response->response.status.value,
                     get_response->response.status.reason);

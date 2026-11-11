@@ -19,7 +19,7 @@
    ros2 run aimdk_examples_cpp get_video_stream
    
    # Specify camera, IP, and output path
-   ros2 run aimdk_examples_cpp get_video_stream --camera head_monocular_centra --ip 192.168.1.100 --output /tmp/my_video.mp4 --duration 10
+   ros2 run aimdk_examples_cpp get_video_stream --camera head_monocular_centra --ip 10.1.1.100 --output /tmp/my_video.mp4 --duration 10
  
  Parameters:
    - camera_id: Camera identifier (interactive prompt if not provided)
